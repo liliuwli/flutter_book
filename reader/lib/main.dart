@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'search.dart';
+import 'menu.dart';
+import 'book.dart';
+import 'searchinfo.dart';
 
 void main() => runApp(new MyApp());
 
@@ -8,6 +12,14 @@ class MyApp extends StatelessWidget {
     return new MaterialApp(
       title: 'Flutter Reader',
       home: new App(),
+      routes: {
+        '/Search':(context) => new SearchScreen(),
+        '/SearchInfo':(context){
+          return new SearchInfoScreen();
+        },
+        '/Menu':(context) => new MenuScreen(),
+        '/Book':(context) => new BookScreen(),
+      },
     );
   }
 }
@@ -27,6 +39,9 @@ class AppState extends State<App> {
     return new Scaffold(
         appBar: new AppBar(
           title: new Text('阅读'),
+          actions: <Widget>[
+            new IconButton(icon:new Icon(Icons.list),onPressed: _clickMenu,),
+          ],
         ),
         body: new Column(
           children: [
@@ -42,7 +57,7 @@ class AppState extends State<App> {
               ),
               margin: const EdgeInsets.only(right: 20,left: 20,top: 10,bottom: 10),
             ),
-            Expanded(
+            new Expanded(
                 //嵌套解决 ListView高度超标问题
                 child:new Container(
                   child:new ListView.builder(
@@ -51,7 +66,7 @@ class AppState extends State<App> {
                     itemCount: 10,
                     itemBuilder:(context,i){
                       if(i<10){
-                        return new BookItem('https://www.booktxt.com/files/article/image/28/28228/28228s.jpg','小阁老','三戒大师','新书感言','第二百四十五章 火并',null);
+                        return new BookItem(this,'https://www.booktxt.com/files/article/image/28/28228/28228s.jpg','小阁老','三戒大师','新书感言','第二百四十五章 火并',null);
                       }
                     },
                   ),
@@ -62,16 +77,40 @@ class AppState extends State<App> {
     );
   }
 
+  void _clickMenu(){
+    print("点击成功，后面改成路由跳转");
+    Navigator.pushNamed(
+      context,
+      "/Menu"
+    );
+    return;
+  }
+
   void _clickSearch(){
     focusNode.unfocus();
     print("点击成功，但是并未触发小键盘，后面改成路由跳转");
+    Navigator.pushNamed(
+        context,
+        "/Search"
+    );
+    return;
+  }
+
+  void _clickBook(num id){
+    print("点击成功，但是并未触发小键盘，后面改成路由跳转");
+    Navigator.pushNamed(
+        context,
+        "/Book"
+    );
     return;
   }
 }
 
-//单行操作
+//初始化单本书
 class BookItem extends StatelessWidget {
   @override
+  num  id;
+  AppState _appState;
   String img;
   String name;
   String author;
@@ -79,87 +118,89 @@ class BookItem extends StatelessWidget {
   String lastChapter;
   Map Source;
 
-  BookItem(this.img,this.name,this.author,this.readmark,this.lastChapter,this.Source);
+  BookItem(this._appState,this.img,this.name,this.author,this.readmark,this.lastChapter,this.Source);
 
   final titlefont = const TextStyle(fontSize: 16.0,height: 1);
   final otherfont = const TextStyle(fontSize: 10,height: 1);
 
   Widget build(BuildContext context) {
-    return new Container(
-        child:new Row(
-          children: [
-            //img
-            Expanded(
-                child: new Container(
-                  child: new Image.network(this.img),
-                  margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
-                ),
-                flex:2
-            ),
-            Expanded(
-                child: new Column(
-                  children: [
-                    //标题
-                    new Row(
-                      children: [
-                        new Icon(Icons.book,color: Colors.black26,),
-                        new Text(
-                            this.name,
-                            style: titlefont,
-                        )
-                      ],
-                    ),
-                    //作者
-                    new Row(
-                      children: [
-                        new Icon(Icons.account_circle,color: Colors.black26,),
-                        new Text(
-                          this.author,
-                          style: otherfont,
-                        )
-                      ],
-                    ),
-                    //已读
-                    new Row(
-                      children: [
-                        new Icon(Icons.access_time,color: Colors.black26,),
-                        new Text(
-                          this.readmark,
-                          style: otherfont,
-                        )
-                      ],
-                    ),
-                    //更新
-                    new Row(
-                      children: [
-                        new Icon(Icons.access_alarm,color: Colors.black26,),
-                        new Text(
-                          this.lastChapter,
-                          style: otherfont,
-                        )
-                      ],
-                    ),
-                  ],
-                ),
-                flex:4
-            ),
-            Expanded(
-                child: new Container(
-                  child: new Icon(Icons.filter_9_plus,color: Colors.red,),
-                ),
-                flex:1
-            ),
-            new Padding(
-                padding: EdgeInsets.all(26),
-                child: new Divider()
-            )
-          ],
-        ),
-        decoration: BoxDecoration(
-            border:Border(
-                bottom:BorderSide(width: 1,color: Colors.black26)
-            )
-        ),
+    return new GestureDetector(
+
+      child:new Container(
+          child:new Row(
+            children: [
+              //img
+              new Expanded(
+                  child: new Container(
+                    child: new Image.network(this.img),
+                    margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
+                  ),
+                  flex:2
+              ),
+              new Expanded(
+                  child: new Column(
+                    children: [
+                      //标题
+                      new Row(
+                        children: [
+                          new Icon(Icons.book,color: Colors.black26,),
+                          new Text(
+                              this.name,
+                              style: titlefont,
+                          )
+                        ],
+                      ),
+                      //作者
+                      new Row(
+                        children: [
+                          new Icon(Icons.account_circle,color: Colors.black26,),
+                          new Text(
+                            this.author,
+                            style: otherfont,
+                          )
+                        ],
+                      ),
+                      //已读
+                      new Row(
+                        children: [
+                          new Icon(Icons.access_time,color: Colors.black26,),
+                          new Text(
+                            this.readmark,
+                            style: otherfont,
+                          )
+                        ],
+                      ),
+                      //更新
+                      new Row(
+                        children: [
+                          new Icon(Icons.access_alarm,color: Colors.black26,),
+                          new Text(
+                            this.lastChapter,
+                            style: otherfont,
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                  flex:6
+              ),
+              new Expanded(
+                  child: new Container(
+                    child: new Icon(Icons.filter_9_plus,color: Colors.red,),
+                  ),
+                  flex:1
+              ),
+            ],
+          ),
+          decoration: BoxDecoration(
+              border:Border(
+                  bottom:BorderSide(width: 1,color: Colors.black26)
+              )
+          ),
+      ),
+      onTap:(){
+        this._appState._clickBook(this.id);
+      }
     );
   }
 }
