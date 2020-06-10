@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'search.dart';
 import 'menu.dart';
 import 'book.dart';
+import 'test.dart';
 import 'searchinfo.dart';
 
 void main() => runApp(new MyApp());
@@ -14,9 +15,10 @@ class MyApp extends StatelessWidget {
       home: new App(),
       routes: {
         '/Search':(context) => new SearchScreen(),
-        '/SearchInfo':(context){
-          return new SearchInfoScreen();
-        },
+        //'/SearchInfo':(context){
+        //  return new SearchInfoScreen();
+        //},
+        '/Test':(context) => new TestScreen(),
         '/Menu':(context) => new MenuScreen(),
         '/Book':(context) => new BookScreen(),
       },
@@ -100,7 +102,8 @@ class AppState extends State<App> {
     print("点击成功，但是并未触发小键盘，后面改成路由跳转");
     Navigator.pushNamed(
         context,
-        "/Book"
+        //"/Book"
+        "/Test"
     );
     return;
   }
@@ -126,7 +129,7 @@ class BookItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return new GestureDetector(
 
-      child:new Container(
+        child:new Container(
           child:new Row(
             children: [
               //img
@@ -145,8 +148,8 @@ class BookItem extends StatelessWidget {
                         children: [
                           new Icon(Icons.book,color: Colors.black26,),
                           new Text(
-                              this.name,
-                              style: titlefont,
+                            this.name,
+                            style: titlefont,
                           )
                         ],
                       ),
@@ -197,10 +200,10 @@ class BookItem extends StatelessWidget {
                   bottom:BorderSide(width: 1,color: Colors.black26)
               )
           ),
-      ),
-      onTap:(){
-        this._appState._clickBook(this.id);
-      }
+        ),
+        onTap:(){
+          this._appState._clickBook(this.id);
+        }
     );
   }
 }
