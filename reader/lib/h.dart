@@ -42,21 +42,3 @@ class BookSource{
   //书源规则
   List rule_list;
 }
-
-//规则信息
-class ParserRule{
-  /*
-   * 0 书名
-   */
-  num id;
-
-  /*
-  * 0 正则
-  * 1 jquery
-  * 2 xpath
-  * */
-  num type;
-
-  String uri;
-
-}

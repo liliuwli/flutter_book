@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'h.dart';
+import 'model/httputils.dart';
 
 class TestScreen extends StatelessWidget{
   static const routeName = '/Test';
   @override
   Widget build(BuildContext context){
+
+
+    Request.getInstance().PaserHttp();
     return TestPage();
   }
 }
 
 class AnimatedLogo extends AnimatedWidget {
+
+
   AnimatedLogo({Key key, Animation<double> animation})
       : super(key: key, listenable: animation);
 
   Widget build(BuildContext context) {
+
     final Animation<double> animation = listenable;
     return new Center(
       child: new Container(
