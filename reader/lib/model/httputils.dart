@@ -1,7 +1,7 @@
 import 'httpmanger.dart';
 import 'source.dart';
 
-import 'package:xpath/xpath.dart';
+import 'package:reader/fquery/fquery.dart';
 
 class Request{
   static Request _instance;
@@ -28,13 +28,14 @@ class Request{
           html = html.replaceAll(RegExp(r'<script[^>]*?>[^<]*?<[^>]script*?>'),"");
           html = html.replaceAll(RegExp(r'<meta[^>]*?>'),"");
 
-
-          ETree tree = ETree.fromString(html);
-          Source.SearchRule['list_uri'].reg = '//*html';
-          List<Element> elements = tree.xpath(Source.SearchRule['list_uri'].reg);
+          Fquery.newDocument(html);
+          Fquery.selector('//*[@class="result-game-item-pic"]/a/img:src',selectorType.xpath);
+          //ETree tree = ETree.fromString(html);
+          //Source.SearchRule['list_uri'].reg = '//*html';
+          //List<Element> elements = tree.xpath(Source.SearchRule['list_uri'].reg);
           //print(Source.SearchRule['list_uri'].reg);
-          print(elements);
-          print(html);
+          //print(elements);
+          //print(html);
         },
         //error
         (error){

@@ -7,7 +7,7 @@ class Source{
 
   static Map<String,ParserRule> SearchRule = <String,ParserRule>{
       'list_uri':new ParserRule('search_lastchapter',ParserType.xpath,'/html"]'),
-      'img':new ParserRule('search_img',ParserType.xpath,'//*[@class="result-game-item-pic"]/a/img/attributes()'),
+      'img':new ParserRule('search_img',ParserType.xpath,'//*[@class="result-game-item-pic"]/a/img/attribute:src'),
       'name':new ParserRule('search_name',ParserType.xpath,'//*[@class="result-game-item-detail"]/h3/a/span/text()'),
       'desc':new ParserRule('search_desc',ParserType.xpath,'//*[@class="result-game-item-desc"]/text()'),
       'author':new ParserRule('search_author',ParserType.xpath,'//*[@class="result-game-item-info"]/p[1]/span/text()'),

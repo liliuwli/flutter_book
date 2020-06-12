@@ -41,3 +41,6 @@
 成果:  
     自动识别编码并转为utf8  
     flutter自带的两个xpath库都有问题，需要自己实现
+    
+第五日：
+完成dom操作以及xpath解析规则部分，明日更新xpath的dom操作
