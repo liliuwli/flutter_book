@@ -44,7 +44,7 @@ class HttpManage{
 
     if (method == GET) {
       if (params != null && params.isNotEmpty) {
-        response = await dio.get(url, queryParameters: params);
+        response = await dio.get(url, queryParameters: params,options: Options(responseType: ResponseType.bytes));
       } else {
         response = await dio.get(url,options: Options(responseType: ResponseType.bytes));
       }

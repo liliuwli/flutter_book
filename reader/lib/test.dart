@@ -8,7 +8,8 @@ class TestScreen extends StatelessWidget{
   Widget build(BuildContext context){
 
 
-    Request.getInstance().PaserHttp();
+    Request.getInstance().SearchBook("三戒");
+    //Request.getInstance().PaserHttptest();
     return TestPage();
   }
 }

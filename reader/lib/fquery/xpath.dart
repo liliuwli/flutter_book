@@ -1,7 +1,8 @@
 import 'package:html/dom.dart';
+import 'package:reader/model/source.dart';
 
 class Xpath{
-	static Element root;
+	static List<Element> root;
 	static NodeType state;
 	static List<SelectorRule> dpath;
 
@@ -9,22 +10,97 @@ class Xpath{
 	static List<String> query(String selector,Document document){
 		List<SelectorRule> depath = Xpath.parse(selector);
 
-		//loop dom
-		var ret;
-		ret = Xpath.domParse(document,dpath);
-		return ret;
+		return Xpath.domParse(document,dpath);
 	}
 
 	static List<String> domParse(Document document,List<SelectorRule> _dpath){
+		List<String> ret = [];
+		//ret list string
 		switch(state){
+			//match start
 			case NodeType.match:
-				//match start
-				break;
 			case NodeType.root:
-				//html start
+				//attr 暂时只处理class
+				_dpath.forEach((_selectorRule) {
+					//提取节点
+					switch(_selectorRule.selectorType){
+						case SelectorType.attr:
+							//提取筛选属性
+							attrMatch _attrMatch = attrMatch.pickattr(_selectorRule.attr);
+							root = Xpath.getChild(_attrMatch.attrName.toLowerCase(), _attrMatch.attrValue,_selectorRule.nodeTag,document);
+							break;
+						case SelectorType.node:
+							//提取node节点
+							root = Xpath.getChild("unattr","",_selectorRule.nodeTag,document);
+							break;
+					}
+
+					//处理返回值
+					switch(_selectorRule.returnType){
+						case ReturnType.element:
+							return;
+						case ReturnType.attr:
+							ret = new List.generate(root.length, (index) => root[index].attributes[_selectorRule.attr]);
+							return;
+						case ReturnType.element_child:
+							return;
+						case ReturnType.text:
+							return;
+					}
+				});
+				Xpath.reset();
+				return ret;
 				break;
 		}
-		return List<String>.generate(1, (index) => 'abc');
+	}
+
+	static void reset(){
+		root = null;
+		state = null;
+		dpath = null;
+	}
+
+
+	static List<Element> getChild(String attrname,String attrval,String nodeTag,Document document){
+		List<Element> _root = [];
+		List<Element> ret;
+
+		switch(attrname){
+			case "class":
+				if(root == null){
+					//第一级
+					_root = document.querySelectorAll("."+attrval);
+				}else{
+					//多级筛选
+					root.forEach((element) {
+						ret = element.getElementsByClassName(attrval);
+						ret.forEach((element) {
+							if(nodeTag == "*" || element.localName == nodeTag){
+								_root.add(element);
+							}
+						});
+					});
+				}
+
+				break;
+			case "unattr":
+				if(root == null){
+					_root = document.querySelectorAll(nodeTag);
+				}else{
+					root.forEach((element) {
+						ret = element.querySelectorAll(nodeTag);
+						//element.children.forEach((element) {print(element); });
+						_root.addAll(ret);
+					});
+				}
+				break;
+
+			default:
+				throw FormatException('not support '+attrname);
+				break;
+		}
+
+		return _root;
 	}
 
 	static List<SelectorRule> parse(String selector){
@@ -65,6 +141,23 @@ class Xpath{
 
 }
 
+class attrMatch{
+	String attrName;
+	String attrValue;
+	attrMatch(this.attrName,this.attrValue);
+
+	static pickattr(String attr){
+		RegExpMatch attr_match = new RegExp('([^=]*?)=[\'"]([^\'"]*?)[\'"]').firstMatch(attr);
+		if(attr_match == null){
+			throw FormatException('xpath attr selector error');
+		}else{
+			String attrname = attr_match.group(1);
+			String attrval = attr_match.group(2);
+			return new attrMatch(attrname, attrval);
+		}
+	}
+}
+
 class SelectorRule{
 	//根据类型确定检索方式
 	SelectorType selectorType;
@@ -78,26 +171,36 @@ class SelectorRule{
 
 	SelectorRule(this.selectorType,this.returnType,this.nodeTag,this.attr);
 
+
+	@override
+	String toString() {
+		return 'SelectorRule{selectorType: $selectorType, returnType: $returnType, nodeTag: $nodeTag, attr: $attr}\n';
+	}
+
 	//根据string 生成规则
 	static SelectorRule getRuleByMatch(String match){
 		//match = '*[@class="result-game-item-pic"]';
 		//属性筛选子元素必须要中括号
-		var hasAttrMatch = new RegExp('\\[[^\\]]*?\\]').hasMatch(match);
+		var hasAttrMatch = new RegExp('\\[@?[^\\]]*?\\]').hasMatch(match);
 		if(hasAttrMatch){
 			//取出中括号属性内容
-			RegExpMatch attr_matchres = new RegExp('\\[([^\\]]*?)\\]').firstMatch(match);
-			String matchStr = attr_matchres.group(1);
-
-			//查看元素限定
-			String elementStr = match.replaceAll('\\[[^\\]]*?\\]', '');
-
-			//检查是否为attr 或者int
-			String attrStr = matchStr.replaceAll('@', '');
-			if(matchStr.length != attrStr.length){
-				return new SelectorRule(SelectorType.attr,ReturnType.element,elementStr,attrStr);
+			RegExpMatch attr_matchres = new RegExp('([^\\[]*?)\\[@([^\\]]*?)\\]').firstMatch(match);
+			if(attr_matchres == null){
+				//int func
+				RegExpMatch attr_matchres = new RegExp('([^\\[]*?)\\[([^\\]]*?)\\]').firstMatch(match);
+				//attr
+				String elementStr = attr_matchres.group(1);
+				String indexStr = attr_matchres.group(2);
+				//检查是否为attr 或者int  mark 暂时未处理下标
+				return new SelectorRule(SelectorType.element_child,ReturnType.element_child,elementStr,indexStr);
 			}else{
-				//暂时不支持 int last() position() 等子元素定位
+				//attr
+				String elementStr = attr_matchres.group(1);
+				String attrStr = attr_matchres.group(2);
+				//检查是否为attr 或者int
+				return new SelectorRule(SelectorType.attr,ReturnType.element,elementStr,attrStr);
 			}
+
 
 		}else{
 			bool isPickAttr = new RegExp('\:(.*?)\$').hasMatch(match);
@@ -112,7 +215,7 @@ class SelectorRule{
 				return new SelectorRule(SelectorType.node,ReturnType.attr,elementStr,attrval);
 			}else{
 				String elementStr = match;
-				return new SelectorRule(SelectorType.node,ReturnType.attr,elementStr,"");
+				return new SelectorRule(SelectorType.node,ReturnType.element,elementStr,"");
 			}
 		}
 	}
@@ -121,12 +224,14 @@ class SelectorRule{
 enum ReturnType{
 	attr,
 	text,
-	element
+	element,
+	element_child
 }
 
 enum SelectorType{
 	attr,
-	node
+	node,
+	element_child
 }
 
 enum NodeType{
