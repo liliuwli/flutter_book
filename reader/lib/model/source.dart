@@ -7,14 +7,12 @@ class Source{
 
   Map<String,ParserRule> SearchRule = <String,ParserRule>{
       'booklist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a:href'),
-      'imglist':new ParserRule(ParserType.xpath,'//*[@class="result-game-item-pic"]/a/img:src'),
-      'namelist':new ParserRule(ParserType.xpath,'//*[@class="result-game-item-detail"]/h3/a/span/text()'),
-      'desclist':new ParserRule(ParserType.xpath,'//*[@class="result-game-item-desc"]/text()'),
-      'authorlist':new ParserRule(ParserType.xpath,'//*[@class="result-game-item-info"]/p[1]/span/text()'),
-      'lastchapterlist':new ParserRule(ParserType.xpath,'//*[@class="result-game-item-info"]/p[last()]/a/text()'),
+      'imglist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a/img:src'),
+      'namelist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-detail"]/h3/a/span/text()'),
+      'desclist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-desc"]/text()'),
+      'authorlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[1]/span[2]/text()'),
+      'lastchapterlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[last()]/a/text()'),
   };
-
-
 
   Source();
 

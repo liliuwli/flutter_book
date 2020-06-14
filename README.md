@@ -46,4 +46,84 @@
 完成dom操作以及xpath解析规则部分，明日更新xpath的dom操作
 
 第六日：
-完成xpath选择器，明日需要更新选择器函数操作
+完成xpath选择器，明日需要更新选择器函数操作、
+
+第七日:
+完成xpath基础操作，可以通过如下操作取值  
+  
+```dom:  
+<div class="result-item result-game-item">
+    <div class="result-game-item-pic">
+        <a cpos="img" href="https://www.booktxt.com/28_28228/" class="result-game-item-pic-link" target="_blank" style="width:110px;height:150px;">
+            <img src="https://www.booktxt.com/files/article/image/28/28228/28228s.jpg" class="result-game-item-pic-link-img" onerror="$(this).attr('src', '/static/img/novel-noimg.jpg')">
+        </a>
+    </div>
+    <div class="result-game-item-detail">
+        <h3 class="result-item-title result-game-item-title">
+            <a cpos="title" href="https://www.booktxt.com/28_28228/" title="小阁老" class="result-game-item-title-link" target="_blank">
+                <span>小阁老</span>
+            </a>
+        </h3>
+        <p class="result-game-item-desc">站在你面前的是：大明王朝的守护者，万历皇帝的亲密战友，内阁首辅的好儿子，人类文明史上最富有的人。控制吏部三十年的幕后黑手，宗藩制度的掘墓人，东林党口中的严世藩第二，张居正高呼不可战胜。海瑞的知己，徐渭...</p>
+        <div class="result-game-item-info">
+
+            <p class="result-game-item-info-tag">
+                <span class="result-game-item-info-tag-title preBold">作者：</span>
+                <span>
+                    三戒大师
+                </span>
+            </p>
+            <p class="result-game-item-info-tag">
+                <span class="result-game-item-info-tag-title preBold">类型：</span>
+                <span class="result-game-item-info-tag-title">历史小说</span>
+            </p>
+
+            <p class="result-game-item-info-tag">
+                <span class="result-game-item-info-tag-title preBold">更新时间：</span>
+                <span class="result-game-item-info-tag-title">2020-06-14</span>
+            </p>
+
+            <p class="result-game-item-info-tag">
+                <span class="result-game-item-info-tag-title preBold">最新章节：</span>
+                <a cpos="newchapter" href=" https://www.booktxt.com/28_28228/360514.html " class="result-game-item-info-tag-item" target="_blank"> 第二百六十七章 谈判 </a>
+            </p>
+        </div>
+    </div>
+</div>
+```
+
+```xpath:"//div[@class="result-game-item-pic"]/a:href"  
+  
+print : https://www.booktxt.com/28_28228/  
+
+```
+
+```xpath:"//div[@class="result-game-item-pic"]/a/img:src"  
+  
+print : https://www.booktxt.com/files/article/image/28/28228/28228s.jpg  
+  
+```  
+
+```xpath:"//div[@class="result-game-item-detail"]/h3/a/span/text()"  
+
+print : 小阁老
+
+```
+
+```xpath:"//div[@class="result-game-item-desc"]/text()"
+
+print : 站在你面前的是：大明王朝的守护者，万历皇帝的亲密战友，内阁首辅的好儿子，人类文明史上最富有的人。控制吏部三十年的幕后黑手，宗藩制度的掘墓人，东林党口中的严世藩第二，张居正高呼不可战胜。海瑞的知己，徐渭...
+
+```
+
+```xpath:"//div[@class="result-game-item-info"]/p[1]/span[2]/text()"
+
+print : 三戒大师
+
+```
+
+```xpath:"//div[@class="result-game-item-info"]/p[last()]/a/text()"
+
+print : 第二百六十七章 谈判
+
+```

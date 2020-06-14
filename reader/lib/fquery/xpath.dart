@@ -16,6 +16,7 @@ class Xpath{
 	static List<String> domParse(Document document,List<SelectorRule> _dpath){
 		List<String> ret = [];
 		//ret list string
+		//print(_dpath);
 		switch(state){
 			//match start
 			case NodeType.match:
@@ -25,31 +26,42 @@ class Xpath{
 					//提取节点
 					switch(_selectorRule.selectorType){
 						case SelectorType.attr:
-							//提取筛选属性
-							attrMatch _attrMatch = attrMatch.pickattr(_selectorRule.attr);
-							root = Xpath.getChild(_attrMatch.attrName.toLowerCase(), _attrMatch.attrValue,_selectorRule.nodeTag,document);
+							if(_selectorRule.nodeTag != ''){
+								//提取筛选属性
+								attrMatch _attrMatch = attrMatch.pickattr(_selectorRule.attr);
+								root = Xpath.getChild(_attrMatch.attrName.toLowerCase(), _attrMatch.attrValue,_selectorRule.nodeTag,document);
+							}
 							break;
 						case SelectorType.node:
 							//提取node节点
 							root = Xpath.getChild("unattr","",_selectorRule.nodeTag,document);
 							break;
-					}
 
+						case SelectorType.element_child:
+							root = Xpath.getChild("func", _selectorRule.attr, _selectorRule.nodeTag,  document);
+							break;
+					}
+					//print(root);
 					//处理返回值
 					switch(_selectorRule.returnType){
-						case ReturnType.element:
-							return;
 						case ReturnType.attr:
 							ret = new List.generate(root.length, (index) => root[index].attributes[_selectorRule.attr]);
 							return;
-						case ReturnType.element_child:
-							return;
-						case ReturnType.text:
+						case ReturnType.func:
+							ret = new List.generate(root.length, (index) => Xpath.callFunc(root[index], _selectorRule.attr));
 							return;
 					}
 				});
 				Xpath.reset();
 				return ret;
+				break;
+		}
+	}
+
+	static String callFunc(Element element,String func){
+		switch(func.toLowerCase()){
+			case 'text':
+				return element.innerHtml.trim();
 				break;
 		}
 	}
@@ -60,7 +72,7 @@ class Xpath{
 		dpath = null;
 	}
 
-
+	//获取子节点 后续切换root节点
 	static List<Element> getChild(String attrname,String attrval,String nodeTag,Document document){
 		List<Element> _root = [];
 		List<Element> ret;
@@ -89,8 +101,82 @@ class Xpath{
 				}else{
 					root.forEach((element) {
 						ret = element.querySelectorAll(nodeTag);
-						//element.children.forEach((element) {print(element); });
 						_root.addAll(ret);
+					});
+				}
+				break;
+
+			case "func":
+				//处理数字和函数
+				int index;
+				bool isFunc = false;
+				String funcname;
+
+				bool isInt = new RegExp('^[\\d\\s]+\$').hasMatch(attrval);
+				if(isInt){
+					attrval = attrval.replaceAll(new RegExp('[\s]'), "");
+					index = int.parse(attrval);
+				}else{
+					//当前只匹配+-
+					isFunc = new RegExp('([^\(]*?)\\(\\)[+-]?([\\d]+?)?').hasMatch(attrval);
+					if(isFunc){
+						RegExpMatch func_match = new RegExp('([^\(]*?)\\(\\)[+-]?([\\d]+?)?').firstMatch(attrval);
+
+						funcname = func_match.group(1);
+						//String operator = func_match.group(2);
+						String _int = func_match.group(2);
+
+						switch(funcname.toLowerCase()){
+							case 'last':
+								if(_int == null){
+									//未匹配到数字
+									index = 0;
+								}else{
+									index = 0-int.parse(_int);
+								}
+								break;
+							default:
+								throw FormatException('not support [] func'+funcname);
+								break;
+						}
+
+					}else{
+						throw FormatException('not support [] has '+attrval);
+					}
+				}
+
+				if(root == null){
+					ret = document.querySelectorAll(nodeTag);
+					if(isFunc && funcname.toLowerCase() == 'last'){
+						index = ret.length - 1 + index;
+					}else{
+						index = index - 1;
+					}
+
+					if(index < 0){
+						throw FormatException('[] content error'+attrval);
+					}
+
+					_root.add(ret[index]);
+
+				}else{
+
+					root.forEach((element) {
+						int _index;
+						ret = element.querySelectorAll(nodeTag);
+
+
+						if(isFunc && funcname.toLowerCase() == 'last'){
+							_index = ret.length - 1 + index;
+						}else{
+							_index = index - 1;
+						}
+
+						if(_index < 0){
+							throw FormatException('[] content error'+attrval);
+						}
+
+						_root.add(ret[_index]);
 					});
 				}
 				break;
@@ -111,10 +197,11 @@ class Xpath{
 	static void parseDpath(String _selector){
 		if(_selector.length == 0){
 			//返回html节点
-			Xpath.dpath = List<SelectorRule>.generate(1, (index) => new SelectorRule(SelectorType.node,ReturnType.element,"html",""));
+			Xpath.dpath = new List<SelectorRule>.generate(1, (index) => new SelectorRule(SelectorType.node,ReturnType.element,"html",""));
 		}else{
 			List<String> matchlist = _selector.split('/');
-			Xpath.dpath = List<SelectorRule>.generate(matchlist.length,
+			//print(matchlist);
+			Xpath.dpath = new List<SelectorRule>.generate(matchlist.length,
 				(int index) => SelectorRule.getRuleByMatch(matchlist[index])
 			);
 		}
@@ -214,8 +301,15 @@ class SelectorRule{
 
 				return new SelectorRule(SelectorType.node,ReturnType.attr,elementStr,attrval);
 			}else{
-				String elementStr = match;
-				return new SelectorRule(SelectorType.node,ReturnType.element,elementStr,"");
+				//如果是函数
+				bool isFunc = new RegExp('([^\(]*?)\\(\\)\$').hasMatch(match);
+				if(isFunc){
+					RegExpMatch func_match = new RegExp('([^\(]*?)\\(\\)\$').firstMatch(match);
+					return new SelectorRule(SelectorType.attr, ReturnType.func,"", func_match.group(1));
+				}else{
+					String elementStr = match;
+					return new SelectorRule(SelectorType.node,ReturnType.element,elementStr,"");
+				}
 			}
 		}
 	}
@@ -223,7 +317,7 @@ class SelectorRule{
 
 enum ReturnType{
 	attr,
-	text,
+	func,
 	element,
 	element_child
 }

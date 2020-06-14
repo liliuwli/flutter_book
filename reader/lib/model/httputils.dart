@@ -21,19 +21,25 @@ class Request{
     void SearchBook(String keyword){
         Source source = Source.getSource();
         HttpManage.getInstance().get(source.baseUrl+source.SearchUrl,{source.SearchKey:keyword}, (String html){
+            /*
             html = html.replaceAll(RegExp(r"<!DOCTYPE[^>]*?>\s*"),"");
             html = html.replaceAll(RegExp(r'<style[^>]*?>[^<]*?<[^>]style*?>'),"");
             html = html.replaceAll(RegExp(r'<script[^>]*?>[^<]*?<[^>]script*?>'),"");
             html = html.replaceAll(RegExp(r'<meta[^>]*?>'),"");
-
+            */
             Fquery.newDocument(html);
             List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
             List<String> imglist = Fquery.selector(source.SearchRule['imglist'].reg,source.SearchRule['imglist'].type);
-            //List<String> namelist = Fquery.selector(source.SearchRule['namelist'].reg,source.SearchRule['namelist'].type);
-            //List<String> desclist = Fquery.selector(source.SearchRule['desclist'].reg,source.SearchRule['desclist'].type);
-            //List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
-            //List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
+            List<String> namelist = Fquery.selector(source.SearchRule['namelist'].reg,source.SearchRule['namelist'].type);
+            List<String> desclist = Fquery.selector(source.SearchRule['desclist'].reg,source.SearchRule['desclist'].type);
+            List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
+            List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
+            print(booklist);
             print(imglist);
+            print(namelist);
+            print(desclist);
+            print(authorlist);
+            print(lastchapterlist);
         }, (error){
             print(error);
         });
