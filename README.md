@@ -92,37 +92,43 @@
 </div>
 ```
 
-```xpath:"//div[@class="result-game-item-pic"]/a:href"  
+```example1:
+xpath:"//div[@class="result-game-item-pic"]/a:href"  
   
 print : https://www.booktxt.com/28_28228/  
 
 ```
 
-```xpath:"//div[@class="result-game-item-pic"]/a/img:src"  
+```example2:
+xpath:"//div[@class="result-game-item-pic"]/a/img:src"  
   
 print : https://www.booktxt.com/files/article/image/28/28228/28228s.jpg  
   
 ```  
 
-```xpath:"//div[@class="result-game-item-detail"]/h3/a/span/text()"  
+```example3:
+xpath:"//div[@class="result-game-item-detail"]/h3/a/span/text()"  
 
 print : 小阁老
 
 ```
 
-```xpath:"//div[@class="result-game-item-desc"]/text()"
+```example4:
+xpath:"//div[@class="result-game-item-desc"]/text()"
 
 print : 站在你面前的是：大明王朝的守护者，万历皇帝的亲密战友，内阁首辅的好儿子，人类文明史上最富有的人。控制吏部三十年的幕后黑手，宗藩制度的掘墓人，东林党口中的严世藩第二，张居正高呼不可战胜。海瑞的知己，徐渭...
 
 ```
 
-```xpath:"//div[@class="result-game-item-info"]/p[1]/span[2]/text()"
+```example5:
+xpath:"//div[@class="result-game-item-info"]/p[1]/span[2]/text()"
 
 print : 三戒大师
 
 ```
 
-```xpath:"//div[@class="result-game-item-info"]/p[last()]/a/text()"
+```example6:
+xpath:"//div[@class="result-game-item-info"]/p[last()]/a/text()"
 
 print : 第二百六十七章 谈判
 
