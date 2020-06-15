@@ -6,9 +6,7 @@ class TestScreen extends StatelessWidget{
   static const routeName = '/Test';
   @override
   Widget build(BuildContext context){
-
-
-    Request.getInstance().SearchBook("三戒");
+    //Request.getInstance().SearchBook("三戒");
     //Request.getInstance().PaserHttptest();
     return TestPage();
   }

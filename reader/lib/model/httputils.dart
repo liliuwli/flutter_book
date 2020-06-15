@@ -1,5 +1,7 @@
 import 'httpmanger.dart';
 import 'source.dart';
+import 'package:reader/logger/log.dart';
+import '../h.dart';
 
 import 'package:reader/fquery/fquery.dart';
 
@@ -18,15 +20,11 @@ class Request{
 
     }
 
-    void SearchBook(String keyword){
+    void SearchBook(String keyword,Function success){
         Source source = Source.getSource();
-        HttpManage.getInstance().get(source.baseUrl+source.SearchUrl,{source.SearchKey:keyword}, (String html){
-            /*
-            html = html.replaceAll(RegExp(r"<!DOCTYPE[^>]*?>\s*"),"");
-            html = html.replaceAll(RegExp(r'<style[^>]*?>[^<]*?<[^>]style*?>'),"");
-            html = html.replaceAll(RegExp(r'<script[^>]*?>[^<]*?<[^>]script*?>'),"");
-            html = html.replaceAll(RegExp(r'<meta[^>]*?>'),"");
-            */
+        HttpManage.getInstance().get(source.baseUrl+source.SearchUrl,{source.SearchKey:keyword},
+		(String html){
+        	//success
             Fquery.newDocument(html);
             List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
             List<String> imglist = Fquery.selector(source.SearchRule['imglist'].reg,source.SearchRule['imglist'].type);
@@ -34,12 +32,15 @@ class Request{
             List<String> desclist = Fquery.selector(source.SearchRule['desclist'].reg,source.SearchRule['desclist'].type);
             List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
             List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
-            print(booklist);
-            print(imglist);
-            print(namelist);
-            print(desclist);
-            print(authorlist);
-            print(lastchapterlist);
+
+            log.debugList([booklist,imglist,namelist,desclist,authorlist,lastchapterlist]);
+            List<SearchResult> args =  new List.generate(booklist.length, (index){
+                SearchResult _searchResult = new SearchResult(namelist[index],imglist[index],authorlist[index],booklist[index],desclist[index]);
+                _searchResult.addLastChapter(lastchapterlist[index]);
+                _searchResult.addSource(source);
+                return _searchResult;
+            });
+            success(args);
         }, (error){
             print(error);
         });

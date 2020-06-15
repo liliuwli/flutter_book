@@ -133,3 +133,7 @@ xpath:"//div[@class="result-game-item-info"]/p[last()]/a/text()"
 print : 第二百六十七章 谈判
 
 ```
+
+第八日：
+异步初体验，反复嵌套多重async/await有坑，应该用async/await进行io操作，回调可以用futrue进行表达。  
+打通搜索页面和api

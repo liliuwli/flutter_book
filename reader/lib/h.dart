@@ -1,3 +1,4 @@
+import 'model/source.dart';
 //路由传参
 class SearchInfoArguments{
   final searchtext;
@@ -22,13 +23,27 @@ class SearchResult{
   //书籍作者
   String author;
 
+  //书籍简介
+  String desc;
+
   //最新更新
-  String lastChapter;
+  List<String> lastChapter = [];
 
   //书源信息
-  List source_list;
+  List<Source> source_list = [];
 
-  SearchResult(this.name,this.imgurl,this.author,this.lastChapter,this.source_list);
+  //阅读列表url
+  String booklist;
+
+  SearchResult(this.name,this.imgurl,this.author,this.booklist,this.desc);
+
+  void addSource(Source _source){
+    this.source_list.add(_source);
+  }
+
+  void addLastChapter(String _lastChapter){
+    this.lastChapter.add(_lastChapter);
+  }
 }
 
 //书源信息
