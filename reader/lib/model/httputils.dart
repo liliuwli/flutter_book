@@ -35,8 +35,9 @@ class Request{
 
             log.debugList([booklist,imglist,namelist,desclist,authorlist,lastchapterlist]);
             List<SearchResult> args =  new List.generate(booklist.length, (index){
-                SearchResult _searchResult = new SearchResult(namelist[index],imglist[index],authorlist[index],booklist[index],desclist[index]);
-                _searchResult.addLastChapter(lastchapterlist[index]);
+                SearchResult _searchResult = new SearchResult(namelist[index]);
+                
+                _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index]]));
                 _searchResult.addSource(source);
                 return _searchResult;
             });
@@ -44,33 +45,6 @@ class Request{
         }, (error){
             print(error);
         });
-    }
-
-    void PaserHttptest(){
-        HttpManage.getInstance().get("https://www.booktxt.com/search.php?keyword=%E4%B8%89%E6%88%92",Map(),
-                //success
-                (String html){
-                    //没得好用得xpath 需要自己实现
-                    html = html.replaceAll(RegExp(r"<!DOCTYPE[^>]*?html>\s*"),"");
-                    html = html.replaceAll(RegExp(r'<style[^>]*?>[^<]*?<[^>]style*?>'),"");
-                    html = html.replaceAll(RegExp(r'<script[^>]*?>[^<]*?<[^>]script*?>'),"");
-                    html = html.replaceAll(RegExp(r'<meta[^>]*?>'),"");
-
-                    Fquery.newDocument(html);
-                    List<String> match = Fquery.selector('//div[@class="result-game-item-pic"]/a/img:src',ParserType.xpath);
-                    print(match);
-                    //ETree tree = ETree.fromString(html);
-                    //Source.SearchRule['list_uri'].reg = '//*html';
-                    //List<Element> elements = tree.xpath(Source.SearchRule['list_uri'].reg);
-                    //print(Source.SearchRule['list_uri'].reg);
-                    //print(elements);
-                    //print(html);
-                },
-                //error
-                (error){
-                    print(error);
-                }
-        );
     }
 
 }

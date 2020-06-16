@@ -3,6 +3,7 @@ import 'h.dart';
 import 'model/search.dart';
 import 'model/source.dart';
 import 'model/httputils.dart';
+import 'model/cache.dart';
 
 class SearchScreen extends StatelessWidget{
 	@override
@@ -19,30 +20,60 @@ class SearchPage extends StatefulWidget{
 class SearchState extends State<SearchPage>{
 	List<String> history = [];
 	List<SearchResult> _searchresult = [];
+	Map<String, SearchResult> bookshelf = {};
 	int page = 0;
 	bool isLoading = false;//是否正在请求新数据
+	bool isLoadBookShelf = false;
 	bool offState = false;//是否显示进入页面时的圆形进度条
 
 	bool _delIcon = false;      //清理搜索框
 	int _searchstate = 0;       //0未开始 1搜索开始 2搜索停止
 	final textEditingController = new TextEditingController();
 
+	//监听滚动
 	ScrollController scrollController = new ScrollController();
 
 	//初始化数据
 	@override
 	void initState() {
 		super.initState();
-		/*
-		scrollController.addListener(() {
-			if (scrollController.position.pixels ==
-					scrollController.position.maxScrollExtent) {
-				print('滑动到了最底部!');
-				getMoreData();
-			}
-		});
-		 */
 		getHistoryData();
+		getBookShelf();
+	}
+
+	//获取书架信息
+	void getBookShelf(){
+		if (isLoadBookShelf) {
+			return;
+		}
+		setState(() {
+			isLoadBookShelf = true;
+		});
+
+		Search.BookShelf().then((Map<String, SearchResult> _bookshelf){
+			setState(() {
+				bookshelf = _bookshelf;
+				isLoadBookShelf = false;
+			});
+		});
+	}
+
+	//获取历史数据
+	void getHistoryData() {
+		if (isLoading) {
+			return;
+		}
+		setState(() {
+			isLoading = true;
+		});
+
+		Search.SearchHistory().then((List<String> _history){
+			setState(() {
+				isLoading = false;
+				history = _history;
+				offState = true;
+			});
+		});
 	}
 
 	@override
@@ -57,8 +88,10 @@ class SearchState extends State<SearchPage>{
 							//底部刷新容器
 							RefreshIndicator(
 								child: choiceWidget(context),
-								onRefresh: (){
-
+								onRefresh: ()async{
+									await Future.delayed(Duration(seconds: 1), () {
+										return ;
+									});
 								},
 							),
 							Offstage(
@@ -97,37 +130,41 @@ class SearchState extends State<SearchPage>{
 			return;
 		}
 		setState(() {
+			//搜索中
 			isLoading = true;
 			_searchstate = 1;
-			//搜索中图标
 			offState = false;
 		});
 		textEditingController.text = searchtext;
 		_delIcon = true;
 
-
-		Request.getInstance().SearchBook(searchtext,(List<SearchResult> args){
-			setState(() {
-				_searchresult = args;
-				offState = true;
-				isLoading = false;
-				_searchstate = 2;
+		history.add(searchtext);
+		Search.SaveSearchHistory(history).then((bool status){
+			Request.getInstance().SearchBook(searchtext,(List<SearchResult> args){
+				setState(() {
+					_searchresult = args;
+					offState = true;
+					isLoading = false;
+					_searchstate = 2;
+				});
 			});
 		});
 
 	}
 
-	//清理搜索框 还原搜索状态 mark
+	//清理搜索框 还原搜索状态
 	void _clickClear(){
-		setState(() {
-			history.clear();
+		Search.ClearSearchHistory().then((value){
+			setState(() {
+				history.clear();
+			});
 		});
 	}
 
 	//获取历史
 	Widget _getHistory(){
 		return new Container(
-			child:new Wrap(
+			child:history.length == 0 ?new Text(""):new Wrap(
 				spacing: 10,     //主轴元素间距
 				runSpacing:20,  //交叉轴间距
 				children: List.generate(
@@ -191,6 +228,7 @@ class SearchState extends State<SearchPage>{
 				decoration: new BoxDecoration(
 					color: Colors.white70,
 				),
+				padding: const EdgeInsets.only(left:15.0,right: 15),
 			),
 		);
 	}
@@ -248,46 +286,35 @@ class SearchState extends State<SearchPage>{
 			margin: new EdgeInsets.all(20),
 		);
 	}
-
-	//显示历史数据
-	void getHistoryData() async {
-		if (isLoading) {
-			return;
-		}
-		setState(() {
-			isLoading = true;
-		});
-		await Future((){
-			return Search.SearchHistory();
-		}).then((res){
-			setState(() {
-				isLoading = false;
-				offState = true;
-
-				history = res;
-			});
-		});//Future end
-	}
-
 }
 
 
 
 //初始化单本书
 class SearchItem extends StatelessWidget {
-	num  id;
 	String img;
 	String name;
 	String author;
-	List<Source> source = [];
-	List<String> lastChapter = [];
+	String lastChapter;
+	Source source;
+	String booklist;
 
-	SearchItem(SearchResult args){
+	//搜索结果和键
+	int index;
+	SearchResult args;
+	//加载数据
+	bool dataload = false;
+
+	SearchItem(SearchResult args,{int index=0}){
 		this.name = args.name;
-		this.author = args.author;
-		this.img = args.imgurl;
-		this.lastChapter = args.lastChapter;
-		this.source = args.source_list;
+		this.author = args.bookinfo[index].author;
+		this.img = args.bookinfo[index].imgurl;
+		this.lastChapter = args.bookinfo[index].lastChapter;
+		this.source = args.sourcelist[index];
+		this.booklist = args.bookinfo[index].booklist;
+
+		this.args = args;
+		this.index = index;
 	}
 
 	final titlefont = const TextStyle(fontSize: 14.0,height: 1);
@@ -299,10 +326,14 @@ class SearchItem extends StatelessWidget {
 			child:new Container(
 				child:new Row(
 					children: [
-							//img
+							//封面
 						new Expanded(
 							child: new Container(
-								child: new Image.network(this.img),
+								//加载占位图,
+								child: new FadeInImage.assetNetwork(
+									placeholder: 'lib/assets/images/nocover.jpg',
+									image: this.img
+								),
 								margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
 							),
 							flex:1
@@ -310,7 +341,7 @@ class SearchItem extends StatelessWidget {
 						new Expanded(
 							child: new Column(
 								children: [
-											//标题
+									//标题
 									new Container(
 										child: new Text(
 											this.name,
@@ -331,7 +362,7 @@ class SearchItem extends StatelessWidget {
 											//更新
 									new Container(
 										child: new Text(
-											this.lastChapter[0],
+											this.lastChapter,
 											style: titlefont,
 										),
 										alignment: FractionalOffset.centerLeft,
@@ -340,7 +371,7 @@ class SearchItem extends StatelessWidget {
 											//来源
 									new Container(
 										child: new Text(
-											"来自笔趣阁等16个源",
+											this.source.name,
 											style: titlefont,
 										),
 										alignment: FractionalOffset.centerLeft,
@@ -360,10 +391,148 @@ class SearchItem extends StatelessWidget {
 
 			),
 			onTap:(){
-				//this._appState._clickBook(this.id);
-				//_showBookActionsDialog(context);
+				_showBookActionsDialog(context,this.name,args.bookinfo,args.sourcelist,this.index);
 			}
 		);
 	}
+	
+	void _showBookActionsDialog(BuildContext context, String name, List<BookMsgInfo> bookinfo, List<Source> sourcelist, int index){
+		//显示result信息
+		showDialog(
+				context: context,
+				barrierDismissible: true,           //点击空白退出
+				builder: (BuildContext context) {
+					return AlertDialog(
+						content: new Container(
+							//显示详情
+							child: new Column(
+								children: [
+									getContentHead(name, bookinfo , sourcelist ,index),
+									getContentBody(bookinfo[index].desc),
+								],
+							),
+							decoration: BoxDecoration(
+								border:Border(
+									bottom:BorderSide(width: 1,color: Colors.black26)
+								)
+							),
+							width: MediaQuery.of(context).size.width * 0.8,
+							height: MediaQuery.of(context).size.height * 0.3,
+						),
+						actions: <Widget>[
+							FlatButton(
+								onPressed: (){
+									Addbook();
+								},
+								child: Text('加入书架'),
+							),
+							FlatButton(
+								onPressed: (){
+									//
+								},
+								child: Text('开始阅读'),
+							),
+						],
+
+					);
+				}
+		);
+	}
+
+	//加入书架
+	void Addbook(){
+		if (dataload) {
+			return;
+		}
+		dataload = true;
+		Cache _cache = new Cache();
+		var data = _cache.GetString("bookshelf");
+		data.then((value) {
+			dataload = false;
+		});
+	}
 }
 
+
+///dialog 内容体
+Widget getContentBody(String desc){
+	return new Expanded(
+		child: new Container(
+			child: new ListView(
+				children: [
+					new Text(desc)
+				],
+				shrinkWrap: true,
+			),
+		)
+	);
+}
+
+///dialog 内容头
+Widget getContentHead(String name, List<BookMsgInfo> args, List<Source> source, int index){
+	final titlefont = const TextStyle(fontSize: 16.0,height: 1);
+	final otherfont = const TextStyle(fontSize: 10,height: 1);
+	return new Row(
+		children: [
+			//img
+			new Expanded(
+					child: new Container(
+						child: new Image.network(args[index].imgurl),
+						margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
+					),
+					flex:2
+			),
+			new Expanded(
+					child: new Column(
+						children: [
+							//标题
+							new Row(
+								children: [
+									new Icon(Icons.book,color: Colors.black26,),
+									new Text(
+										name,
+										style: titlefont,
+									)
+								],
+							),
+							//作者
+							new Row(
+								children: [
+									new Icon(Icons.account_circle,color: Colors.black26,),
+									new Text(
+										args[index].author,
+										style: otherfont,
+									)
+								],
+							),
+							//更新
+							new Row(
+								children: [
+									new Icon(Icons.access_alarm,color: Colors.black26,),
+									new Text(
+										args[index].lastChapter,
+										style: otherfont,
+									)
+								],
+							),
+						],
+					),
+					flex:4
+			),
+			new Expanded(
+				child: new Container(
+					child: new FlatButton(
+						onPressed: (){
+							print("click huanyuan");
+						},
+						child: new Text(
+							"换源",
+							style: otherfont,
+						)
+					),
+				),
+				flex:1
+			),
+		],
+	);
+}

@@ -8,16 +8,22 @@ class Cache{
   String name = 'shared_preferences';
   Future<SharedPreferences> _instance;
 
-  cache(){
+  Cache(){
     this._instance = getInstance();
   }
+
+   Future<void> remove(String key) async{
+       return await this._instance.then((instance){
+           return instance.remove(key);
+       });
+   }
 
   Future<SharedPreferences> getInstance() async {
     return await SharedPreferences.getInstance();
   }
 
-  Future<String> GetString(String key){
-    return this._instance.then((instance){
+  Future<String> GetString(String key) async {
+    return await this._instance.then((instance){
       return instance.getString(key);
     });
   }
@@ -29,42 +35,17 @@ class Cache{
     });
   }
 
-  Future<int> GetInt(String key){
-    return this._instance.then((instance){
-      return instance.getInt(key);
-    });
-  }
-
-  Future<void> SetInt(String key,int value) async {
-    final SharedPreferences prefs = await this._instance;
-    prefs.setInt(key, value).then((bool status){
-      return status;
-    });
-  }
-
-  Future<bool> GetBool(String key){
-    return this._instance.then((instance){
-      return instance.getBool(key);
-    });
-  }
-
-  Future<void> SetBool(String key,bool value) async {
-    final SharedPreferences prefs = await this._instance;
-    prefs.setBool(key, value).then((bool status){
-      return status;
-    });
-  }
-
-  Future<List<String>> GetList(String key){
-    return this._instance.then((instance){
+  Future<List<String>> GetList(String key) async {
+    return await this._instance.then((instance){
       return instance.getStringList(key);
     });
   }
 
-  Future<void> SetList(String key,List<String> value) async {
-    final SharedPreferences prefs = await this._instance;
-    prefs.setStringList(key, value).then((bool status){
-      return status;
-    });
-  }
+    Future<bool> SetList(String key,List<String> value) async {
+        final SharedPreferences prefs = await this._instance;
+
+        return await this._instance.then((instance){
+            return instance.setStringList(key, value);
+        });
+    }
 }

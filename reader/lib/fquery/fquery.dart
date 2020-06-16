@@ -3,8 +3,6 @@ import 'package:html/parser.dart';
 import 'package:reader/fquery/xpath.dart';
 import '../model/source.dart';
 
-
-
 class Fquery{
     static Document document;
 
