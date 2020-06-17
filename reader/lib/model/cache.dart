@@ -5,46 +5,57 @@ import 'package:shared_preferences/shared_preferences.dart';
 *     需要配合futurebuilder渲染页面
 * */
 class Cache{
-  String name = 'shared_preferences';
-  Future<SharedPreferences> _instance;
+    String name = 'shared_preferences';
+    static Future<SharedPreferences> _instance;
 
-  Cache(){
-    this._instance = getInstance();
-  }
+    Cache(){
 
-   Future<void> remove(String key) async{
-       return await this._instance.then((instance){
-           return instance.remove(key);
-       });
-   }
+    }
+    static init(){
+        if(_instance == null){
+            _instance = Cache.getInstance();
+        }
+    }
 
-  Future<SharedPreferences> getInstance() async {
-    return await SharedPreferences.getInstance();
-  }
+    static clear() async{
+        return await Cache._instance.then((instance){
+            return instance.clear();
+        });
+    }
 
-  Future<String> GetString(String key) async {
-    return await this._instance.then((instance){
-      return instance.getString(key);
-    });
-  }
+    static Future<void> remove(String key) async{
+        return await Cache._instance.then((instance){
+            return instance.remove(key);
+        });
+    }
 
-  Future<void> SetString(String key,String value) async {
-    final SharedPreferences prefs = await this._instance;
-    prefs.setString(key, value).then((bool status){
-        return status;
-    });
-  }
+    static Future<SharedPreferences> getInstance() async {
+        return await SharedPreferences.getInstance();
+    }
 
-  Future<List<String>> GetList(String key) async {
-    return await this._instance.then((instance){
-      return instance.getStringList(key);
-    });
-  }
+    static Future<String> GetString(String key) async {
+        return await Cache._instance.then((instance){
+            return instance.getString(key);
+        });
+    }
 
-    Future<bool> SetList(String key,List<String> value) async {
-        final SharedPreferences prefs = await this._instance;
+    static Future<bool> SetString(String key,String value) async {
+        final SharedPreferences prefs = await Cache._instance;
+        prefs.setString(key, value).then((bool status){
+            return status;
+        });
+    }
 
-        return await this._instance.then((instance){
+    static Future<List<String>> GetList(String key) async {
+        return await Cache._instance.then((instance){
+            return instance.getStringList(key);
+        });
+    }
+
+    static Future<bool> SetList(String key,List<String> value) async {
+        final SharedPreferences prefs = await Cache._instance;
+
+        return await Cache._instance.then((instance){
             return instance.setStringList(key, value);
         });
     }

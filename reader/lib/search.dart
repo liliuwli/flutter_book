@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'h.dart';
+import 'utils/common.dart';
 import 'model/search.dart';
 import 'model/source.dart';
 import 'model/httputils.dart';
@@ -20,7 +23,7 @@ class SearchPage extends StatefulWidget{
 class SearchState extends State<SearchPage>{
 	List<String> history = [];
 	List<SearchResult> _searchresult = [];
-	Map<String, SearchResult> bookshelf = {};
+	List<SearchResult> bookshelf = [];
 	int page = 0;
 	bool isLoading = false;//是否正在请求新数据
 	bool isLoadBookShelf = false;
@@ -50,7 +53,7 @@ class SearchState extends State<SearchPage>{
 			isLoadBookShelf = true;
 		});
 
-		Search.BookShelf().then((Map<String, SearchResult> _bookshelf){
+		Search.getBookShelf().then((List<SearchResult> _bookshelf){
 			setState(() {
 				bookshelf = _bookshelf;
 				isLoadBookShelf = false;
@@ -78,32 +81,30 @@ class SearchState extends State<SearchPage>{
 
 	@override
 	Widget build(BuildContext context) {
-		return MaterialApp(
-			home: Scaffold(
-					appBar: AppBar(
-						title: Text("搜索小说"),
-					),
-					body: Stack(
-						children: <Widget>[
-							//底部刷新容器
-							RefreshIndicator(
-								child: choiceWidget(context),
-								onRefresh: ()async{
-									await Future.delayed(Duration(seconds: 1), () {
-										return ;
-									});
-								},
+		return new Scaffold(
+				appBar: AppBar(
+					title: Text("搜索小说"),
+				),
+				body: Stack(
+					children: <Widget>[
+						//底部刷新容器
+						RefreshIndicator(
+							child: choiceWidget(context),
+							onRefresh: ()async{
+								await Future.delayed(Duration(seconds: 1), () {
+									return ;
+								});
+							},
+						),
+						Offstage(
+							//loading进度条
+							offstage: offState,
+							child: Center(
+								child: CircularProgressIndicator(),
 							),
-							Offstage(
-								//loading进度条
-								offstage: offState,
-								child: Center(
-									child: CircularProgressIndicator(),
-								),
-							),
-						],
-					)
-			),
+						),
+					],
+				)
 		);
 	}
 
@@ -138,7 +139,11 @@ class SearchState extends State<SearchPage>{
 		textEditingController.text = searchtext;
 		_delIcon = true;
 
-		history.add(searchtext);
+		//新搜索词
+		if(history.indexOf(searchtext) < 0){
+			history.add(searchtext);
+		}
+
 		Search.SaveSearchHistory(history).then((bool status){
 			Request.getInstance().SearchBook(searchtext,(List<SearchResult> args){
 				setState(() {
@@ -296,8 +301,8 @@ class SearchItem extends StatelessWidget {
 	String name;
 	String author;
 	String lastChapter;
-	Source source;
 	String booklist;
+	BookSource source;
 
 	//搜索结果和键
 	int index;
@@ -305,13 +310,17 @@ class SearchItem extends StatelessWidget {
 	//加载数据
 	bool dataload = false;
 
-	SearchItem(SearchResult args,{int index=0}){
+	//加入书架操作
+	bool isset = false;
+
+	SearchItem(SearchResult args){
+		this.index = args.index;
 		this.name = args.name;
-		this.author = args.bookinfo[index].author;
-		this.img = args.bookinfo[index].imgurl;
-		this.lastChapter = args.bookinfo[index].lastChapter;
-		this.source = args.sourcelist[index];
-		this.booklist = args.bookinfo[index].booklist;
+		this.author = args.bookinfolist.bookMsgInfoList[this.index].author;
+		this.img = args.bookinfolist.bookMsgInfoList[this.index].imgurl;
+		this.lastChapter = args.bookinfolist.bookMsgInfoList[this.index].lastChapter;
+		this.booklist = args.bookinfolist.bookMsgInfoList[this.index].booklist;
+		this.source = args.sourcelist.bookSourceList[this.index];
 
 		this.args = args;
 		this.index = index;
@@ -368,7 +377,7 @@ class SearchItem extends StatelessWidget {
 										alignment: FractionalOffset.centerLeft,
 										margin: EdgeInsets.only(bottom: 15),
 									),
-											//来源
+									//来源
 									new Container(
 										child: new Text(
 											this.source.name,
@@ -391,64 +400,123 @@ class SearchItem extends StatelessWidget {
 
 			),
 			onTap:(){
-				_showBookActionsDialog(context,this.name,args.bookinfo,args.sourcelist,this.index);
+				_showBookActionsDialog(context,this.name,args.bookinfolist.bookMsgInfoList,args.sourcelist.bookSourceList,this.index);
 			}
 		);
 	}
-	
-	void _showBookActionsDialog(BuildContext context, String name, List<BookMsgInfo> bookinfo, List<Source> sourcelist, int index){
+
+	///显示菜单ui
+	void _showBookActionsDialog(BuildContext context, String name, List<BookMsgInfo> bookinfo, List<BookSource> sourcelist, int index){
 		//显示result信息
 		showDialog(
 				context: context,
 				barrierDismissible: true,           //点击空白退出
 				builder: (BuildContext context) {
-					return AlertDialog(
-						content: new Container(
-							//显示详情
-							child: new Column(
-								children: [
-									getContentHead(name, bookinfo , sourcelist ,index),
-									getContentBody(bookinfo[index].desc),
-								],
+					return StatefulBuilder(builder: (context, state)
+					{
+						return AlertDialog(
+							content: new Container(
+								//显示详情
+								child: new Column(
+									children: [
+										getContentHead(
+												name, bookinfo, sourcelist,
+												index),
+										getContentBody(bookinfo[index].desc),
+									],
+								),
+								decoration: BoxDecoration(
+										border: Border(
+												bottom: BorderSide(width: 1,
+														color: Colors.black26)
+										)
+								),
+								width: MediaQuery
+										.of(context)
+										.size
+										.width * 0.8,
+								height: MediaQuery
+										.of(context)
+										.size
+										.height * 0.3,
 							),
-							decoration: BoxDecoration(
-								border:Border(
-									bottom:BorderSide(width: 1,color: Colors.black26)
-								)
-							),
-							width: MediaQuery.of(context).size.width * 0.8,
-							height: MediaQuery.of(context).size.height * 0.3,
-						),
-						actions: <Widget>[
-							FlatButton(
-								onPressed: (){
-									Addbook();
-								},
-								child: Text('加入书架'),
-							),
-							FlatButton(
-								onPressed: (){
-									//
-								},
-								child: Text('开始阅读'),
-							),
-						],
+							actions: getBookActions(context,name, bookinfo, sourcelist,
+									index,state),
 
-					);
+						);
+					});
 				}
 		);
 	}
 
-	//加入书架
-	void Addbook(){
+	List<Widget> getBookActions(BuildContext context, String name, List<BookMsgInfo> bookinfo, List<BookSource> sourcelist, int index,Function(void Function()) state){
+		return [
+			FlatButton(
+				onPressed: () {
+					Navigator.of(context).pop();
+				},
+				child: Text('关闭弹窗'),
+			),
+			FlatButton(
+				onPressed: () {
+					if(isset){
+						//移除书架内小说
+						Removebook(name,state);
+					}else{
+						//加入书架
+						Addbook(name, bookinfo, sourcelist,
+								index,state);
+					}
+				},
+				child: isset?Text('移除书架'):Text('加入书架'),
+			),
+			FlatButton(
+				onPressed: () {
+					int sourceid = sourcelist[index].id;
+					String chapterlisturl = bookinfo[index].booklist;
+					//String name
+
+					Navigator.pushNamed(
+						context,
+						"/Book",
+						arguments: BookPageArguments(name,sourceid,chapterlisturl)
+					);
+				},
+				child: Text('开始阅读'),
+			),
+		];
+	}
+
+	void Removebook(String name, Function(void Function()) state){
 		if (dataload) {
 			return;
 		}
 		dataload = true;
-		Cache _cache = new Cache();
-		var data = _cache.GetString("bookshelf");
-		data.then((value) {
-			dataload = false;
+		Search.DelBookShelf(name).then((value){
+			state((){
+				isset = false;
+				dataload = false;
+			});
+		});
+	}
+
+	//加入书架
+	void Addbook(String name, List<BookMsgInfo> bookinfo, List<BookSource> sourcelist, int index, Function(void Function()) state){
+		if (dataload) {
+			return;
+		}
+		dataload = true;
+
+		SearchResult _searchResult = new SearchResult(name);
+		_searchResult.setBookInfo(bookinfo);
+		_searchResult.setSource(sourcelist);
+		_searchResult.index = index;
+
+		Search.SetBookShelf(_searchResult).then((value){
+			state((){
+				isset = true;
+				dataload = false;
+			});
 		});
 	}
 }
@@ -469,7 +537,7 @@ Widget getContentBody(String desc){
 }
 
 ///dialog 内容头
-Widget getContentHead(String name, List<BookMsgInfo> args, List<Source> source, int index){
+Widget getContentHead(String name, List<BookMsgInfo> args, List<BookSource> source, int index){
 	final titlefont = const TextStyle(fontSize: 16.0,height: 1);
 	final otherfont = const TextStyle(fontSize: 10,height: 1);
 	return new Row(
@@ -490,7 +558,7 @@ Widget getContentHead(String name, List<BookMsgInfo> args, List<Source> source, 
 								children: [
 									new Icon(Icons.book,color: Colors.black26,),
 									new Text(
-										name,
+										stringLimit(name,7),
 										style: titlefont,
 									)
 								],
@@ -510,7 +578,7 @@ Widget getContentHead(String name, List<BookMsgInfo> args, List<Source> source, 
 								children: [
 									new Icon(Icons.access_alarm,color: Colors.black26,),
 									new Text(
-										args[index].lastChapter,
+										stringLimit(args[index].lastChapter,10),
 										style: otherfont,
 									)
 								],

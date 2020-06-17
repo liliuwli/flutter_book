@@ -1,25 +1,26 @@
+//网络加载的书源信息
 class Source{
-  String name = '顶点小说网';
+    int id = 1;
+    String name = '顶点小说网';
 
-  String baseUrl = "https://www.booktxt.com";
-  String SearchUrl = "/search.php";
-  String SearchKey = "keyword";
+    String baseUrl = "https://www.booktxt.com";
+    String SearchUrl = "/search.php";
+    String SearchKey = "keyword";
 
-  Map<String,ParserRule> SearchRule = <String,ParserRule>{
-      'booklist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a:href'),
-      'imglist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a/img:src'),
-      'namelist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-detail"]/h3/a/span/text()'),
-      'desclist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-desc"]/text()'),
-      'authorlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[1]/span[2]/text()'),
-      'lastchapterlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[last()]/a/text()'),
-  };
+    Map<String,ParserRule> SearchRule = <String,ParserRule>{
+        'booklist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a:href'),
+        'imglist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a/img:src'),
+        'namelist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-detail"]/h3/a/span/text()'),
+        'desclist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-desc"]/text()'),
+        'authorlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[1]/span[2]/text()'),
+        'lastchapterlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[last()]/a/text()'),
+    };
 
-  Source();
+    Source();
 
-  static Source getSource(){
-      return new Source();
-  }
-
+    static Source getSource(){
+        return new Source();
+    }
 }
 
 

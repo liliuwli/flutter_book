@@ -1,8 +1,14 @@
 import 'model/source.dart';
+import 'dart:convert';
+
+
 //路由传参
-class SearchInfoArguments{
-    final searchtext;
-    SearchInfoArguments(this.searchtext);
+class BookPageArguments{
+    int Sourceid;
+    String name;
+    String chapterlisturl;
+
+    BookPageArguments(this.name,this.Sourceid,this.chapterlisturl);
 }
 /*
 *         搜索逻辑-举例
@@ -18,25 +24,169 @@ class SearchResult{
     String name;
 
     //选中书源
-    int index;
+    int index=0;
 
-    List<BookMsgInfo> bookinfo = [];
+    //设置已读
+    String readmark;
+
+    //书籍详情
+    BookMsgInfoList bookinfolist;
 
     //书源信息
-    List<Source> sourcelist = [];
+    BookSourceList sourcelist;
 
 
-    SearchResult(this.name);
+    @override
+    String toString() {
+        return jsonEncode(this);
+    }
 
-    void addSource(Source _source){
-        this.sourcelist.add(_source);
+    SearchResult.fromJson(Map<String,dynamic> jsonobj){
+        name = jsonobj['name'];
+        index = jsonobj['index'];
+        readmark = jsonobj['readmark'];
+        bookinfolist = jsonobj['bookinfolist'] == null ? null :BookMsgInfoList.fromJson(jsonobj['bookinfolist']);
+        sourcelist = jsonobj['sourcelist'] == null ? null :BookSourceList.fromJson(jsonobj['sourcelist']);
+    }
+
+    Map<String,dynamic> toJson() {
+        final Map<String,dynamic> data = new Map<String,dynamic>();
+        data["name"] = this.name;
+        data["index"] = this.index;
+        data["readmark"] = this.readmark;
+        data["bookinfolist"] = this.bookinfolist==null?null:this.bookinfolist.toJson();
+        data["sourcelist"] = this.sourcelist==null?null:this.sourcelist.toJson();
+
+        return data;
+    }
+
+
+    SearchResult(String name){
+        this.name = name;
+        this.bookinfolist = new BookMsgInfoList([]);
+        this.sourcelist = new BookSourceList([]);
+    }
+
+    void addSource(BookSource _source){
+        this.sourcelist.bookSourceList.add(_source);
     }
 
     void addBookInfo(infoArgs){
-        this.bookinfo.add(infoArgs);
+        this.bookinfolist.bookMsgInfoList.add(infoArgs);
+    }
+
+    void setSource(List<BookSource> _sourcelist){
+        this.sourcelist = new BookSourceList(_sourcelist);
+    }
+
+    void setBookInfo(List<BookMsgInfo> _bookinfo){
+        this.bookinfolist = new BookMsgInfoList(_bookinfo);
+    }
+}
+
+//搜索到一本书 都对应了多个源 每个源都有一条搜索信息  book =>(record[],source[])
+class BookSourceList{
+    List<BookSource> bookSourceList = [];
+    int length = 0;
+    BookSourceList(List<BookSource> _sourcelist){
+        this.bookSourceList = _sourcelist;
+        this.length = _sourcelist.length;
+    }
+
+    void add (BookSource item){
+        this.bookSourceList.add(item);
+        this.length++;
+    }
+
+    BookSource get(int index){
+        if(index >= length){
+            return null;
+        }else{
+            return this.bookSourceList[index];
+        }
     }
 
 
+    @override
+    String toString() {
+        return json.encode(this);
+    }
+
+    Map<String,dynamic> toJson() {
+        final Map<String,dynamic> data = new Map<String,dynamic>();
+        data["length"] = this.length;
+
+        if(this.bookSourceList != null){
+            data["bookSourceList"] = this.bookSourceList.map((element)=>element.toJson()).toList();
+        }else{
+            data["bookSourceList"] = null;
+        }
+
+        return data;
+    }
+
+    BookSourceList.fromJson(Map<String,dynamic> jsonobj){
+        length = jsonobj['length'];
+        if(jsonobj['bookSourceList'] != null ){
+            bookSourceList = new List<BookSource>();
+            (jsonobj['bookSourceList'] as List).forEach((element) {
+                bookSourceList.add(new BookSource.fromJson(element));
+            });
+        }else{
+            bookSourceList = null;
+        }
+    }
+}
+
+//搜索到一本书 都对应了多个源 每个源都有一条搜索信息  book =>(record[],source[])
+class BookMsgInfoList{
+    List<BookMsgInfo> bookMsgInfoList = [];
+    int length = 0;
+    BookMsgInfoList(List<BookMsgInfo> bookmsginfolist){
+        this.bookMsgInfoList = bookmsginfolist;
+        this.length = bookmsginfolist.length;
+    }
+
+
+
+    void add (BookMsgInfo item){
+        this.bookMsgInfoList.add(item);
+        this.length++;
+    }
+
+    BookMsgInfo get(int index){
+        if(index >= length){
+            return null;
+        }else{
+            return this.bookMsgInfoList[index];
+        }
+    }
+
+
+    Map<String,dynamic> toJson() {
+        final Map<String,dynamic> data = new Map<String,dynamic>();
+        data["length"] = this.length;
+
+        if(this.bookMsgInfoList != null){
+            data["bookMsgInfoList"] = this.bookMsgInfoList.map((element)=>element.toJson()).toList();
+        }else{
+            data["bookMsgInfoList"] = null;
+        }
+
+        return data;
+    }
+
+    BookMsgInfoList.fromJson(Map<String,dynamic> jsonobj){
+        length = jsonobj['length'];
+        if(jsonobj['bookMsgInfoList'] != null ){
+            bookMsgInfoList = new List<BookMsgInfo>();
+            (jsonobj['bookMsgInfoList'] as List).forEach((element) {
+                bookMsgInfoList.add(new BookMsgInfo.fromJson(element));
+            });
+        }else{
+            bookMsgInfoList = null;
+        }
+    }
 }
 
 class BookMsgInfo{
@@ -56,16 +206,44 @@ class BookMsgInfo{
     String lastChapter;
 
     BookMsgInfo(List<String> Args):this.imgurl = Args[0],this.author = Args[1],this.booklist = Args[2],this.desc = Args[3],this.lastChapter = Args[4];
+
+    BookMsgInfo.fromJson(Map<String,dynamic> jsonobj){
+        imgurl = jsonobj['imgurl'];
+        author = jsonobj['author'];
+        booklist = jsonobj['booklist'];
+        desc = jsonobj['desc'];
+        lastChapter = jsonobj['lastChapter'];
+    }
+
+    Map<String,dynamic> toJson() {
+        final Map<String,dynamic> data = new Map<String,dynamic>();
+        data["imgurl"] = this.imgurl;
+        data["author"] = this.author;
+        data["booklist"] = this.booklist;
+        data["desc"] = this.desc;
+        data["lastChapter"] = this.lastChapter;
+
+        return data;
+    }
 }
 
-//书源信息
+//保存的书源信息
 class BookSource{
     //书源名称
     String name;
+    int id;
 
-    //书源api地址
-    String baseurl;
+    BookSource(this.name,this.id);
+    BookSource.fromJson(Map<String,dynamic> jsonobj){
+        name = jsonobj['name'];
+        id = jsonobj['id'];
+    }
 
-    //书源规则
-    List rule_list;
+    Map<String,dynamic> toJson() {
+        final Map<String,dynamic> data = new Map<String,dynamic>();
+        data["name"] = this.name;
+        data["id"] = this.id;
+
+        return data;
+    }
 }

@@ -1,7 +1,7 @@
 import 'httpmanger.dart';
 import 'source.dart';
-import 'package:reader/logger/log.dart';
-import '../h.dart';
+import 'package:reader/utils//log.dart';
+import 'package:reader/h.dart';
 
 import 'package:reader/fquery/fquery.dart';
 
@@ -20,6 +20,7 @@ class Request{
 
     }
 
+    //后续发展多源异步获取数据
     void SearchBook(String keyword,Function success){
         Source source = Source.getSource();
         HttpManage.getInstance().get(source.baseUrl+source.SearchUrl,{source.SearchKey:keyword},
@@ -33,12 +34,12 @@ class Request{
             List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
             List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
 
-            log.debugList([booklist,imglist,namelist,desclist,authorlist,lastchapterlist]);
+            //log.debugList([booklist,imglist,namelist,desclist,authorlist,lastchapterlist]);
             List<SearchResult> args =  new List.generate(booklist.length, (index){
                 SearchResult _searchResult = new SearchResult(namelist[index]);
                 
                 _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index]]));
-                _searchResult.addSource(source);
+                _searchResult.addSource(new BookSource(source.name,source.id));
                 return _searchResult;
             });
             success(args);
