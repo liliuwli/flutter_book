@@ -95,6 +95,23 @@ class Xpath{
 				}
 
 				break;
+			case "id":
+				//id选择器
+				if(root == null){
+					//第一级
+					_root = document.querySelectorAll("#"+attrval);
+				}else{
+					//多级筛选
+					root.forEach((element) {
+						ret = element.querySelectorAll("#"+attrval);
+						ret.forEach((element) {
+							if(nodeTag == "*" || element.localName == nodeTag){
+								_root.add(element);
+							}
+						});
+					});
+				}
+				break;
 			case "unattr":
 				if(root == null){
 					_root = document.querySelectorAll(nodeTag);

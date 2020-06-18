@@ -474,12 +474,13 @@ class SearchItem extends StatelessWidget {
 				onPressed: () {
 					int sourceid = sourcelist[index].id;
 					String chapterlisturl = bookinfo[index].booklist;
+					String readmark = null;
 					//String name
 
 					Navigator.pushNamed(
 						context,
 						"/Book",
-						arguments: BookPageArguments(name,sourceid,chapterlisturl)
+						arguments: BookPageArguments(name,sourceid,chapterlisturl,readmark)
 					);
 				},
 				child: Text('开始阅读'),

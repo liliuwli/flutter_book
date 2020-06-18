@@ -7,8 +7,9 @@ class BookPageArguments{
     int Sourceid;
     String name;
     String chapterlisturl;
+    String readmark;
 
-    BookPageArguments(this.name,this.Sourceid,this.chapterlisturl);
+    BookPageArguments(this.name,this.Sourceid,this.chapterlisturl,this.readmark);
 }
 /*
 *         搜索逻辑-举例
@@ -246,4 +247,19 @@ class BookSource{
 
         return data;
     }
+}
+
+//采集到的目录结果
+class BookChapter{
+    String name;
+    String chapterUrl;
+
+    BookChapter(this.name,this.chapterUrl);
+
+    @override
+    String toString() {
+        return 'BookChapter{name: $name} {url: $chapterUrl}';
+    }
+
+
 }

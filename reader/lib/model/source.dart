@@ -1,3 +1,5 @@
+import 'dart:async';
+
 //网络加载的书源信息
 class Source{
     int id = 1;
@@ -16,10 +18,21 @@ class Source{
         'lastchapterlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[last()]/a/text()'),
     };
 
+    Map<String,ParserRule> ListRule = <String,ParserRule>{
+        'chapterName':new ParserRule(ParserType.xpath,'//div[@class="box_con"]/div[@id="list"]/dd/a/text()'),
+        'chapterUrl':new ParserRule(ParserType.xpath,'//div[@class="box_con"]/div[@id="list"]/dd/a:href'),
+    };
+
     Source();
 
     static Source getSource(){
         return new Source();
+    }
+
+    static Future<Source> getSourceById(int sourceid) async {
+        Completer _completer = Completer<Source>();
+        _completer.complete(new Source());
+        return await _completer.future;
     }
 }
 

@@ -245,7 +245,7 @@ class BookItem extends StatelessWidget {
 				Navigator.pushNamed(
 					context,
 					"/Book",
-					arguments: BookPageArguments(name,source.id,chapterlisturl)
+					arguments: BookPageArguments(name,source.id,chapterlisturl,readmark)
 				);
 			}
 		);
