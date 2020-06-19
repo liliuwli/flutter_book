@@ -60,7 +60,7 @@ class Request{
     }
 
     //同时请求多个小说
-    Future<List<String>> MutilReqChapter(List<BookChapter> chapterList,String readmark , String baseUrl) async {
+    Future<List<String>> MutilReqChapter(List<BookChapter> chapterList,String readmark , Source _source) async {
         int length = 5;
         int index;
         List<String> RequestUrl = [];
@@ -82,7 +82,7 @@ class Request{
                 if( RegExp("http").hasMatch(chapterList[i].chapterUrl.toLowerCase()) ){
                     RequestUrl.add(chapterList[i].chapterUrl);
                 }else{
-                    RequestUrl.add(baseUrl+chapterList[i].chapterUrl);
+                    RequestUrl.add(_source.baseUrl+chapterList[i].chapterUrl);
                 }
             }
         }else{
@@ -90,7 +90,7 @@ class Request{
                 if( RegExp("http").hasMatch(chapterList[i].chapterUrl.toLowerCase()) ){
                     RequestUrl.add(chapterList[i].chapterUrl);
                 }else{
-                    RequestUrl.add(baseUrl+chapterList[i].chapterUrl);
+                    RequestUrl.add(_source.baseUrl+chapterList[i].chapterUrl);
                 }
             }
         }
@@ -101,11 +101,25 @@ class Request{
             if( RegExp("http").hasMatch(chapterList[index].chapterUrl.toLowerCase()) ){
                 RequestUrl.add(chapterList[index].chapterUrl);
             }else{
-                RequestUrl.add(baseUrl+chapterList[index].chapterUrl);
+                RequestUrl.add(_source.baseUrl+chapterList[index].chapterUrl);
             }
         }
 
         //mark 缺少读取小说内容
-        return await HttpManage.getInstance().MutilRequest(RequestUrl);
+        return await HttpManage.getInstance().MutilRequest(RequestUrl).then((List<String> html){
+            List<String> ret = List<String>();
+            html.forEach((String htmlItem) {
+                Fquery.newDocument(htmlItem);
+                List<String> namelist = Fquery.selector(_source.ChapterRule['chapter'].reg,_source.ChapterRule['chapter'].type);
+                String htmlString = "";
+                namelist.forEach((item) {
+                    htmlString += item;
+                });
+                htmlString = htmlString.replaceAll("&nbsp;", " ");
+                htmlString = htmlString.replaceAll(new RegExp("<br[^>]*?>"), "\r\n");
+                ret.add(htmlString);
+            });
+            return ret;
+        });
     }
 }

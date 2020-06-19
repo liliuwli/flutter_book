@@ -3,6 +3,7 @@ import 'package:reader/h.dart';
 import 'package:reader/model/source.dart';
 import 'package:reader/model/search.dart';
 import 'package:reader/model/httputils.dart';
+import 'package:reader/utils/chapterPage.dart';
 
 class BookScreen extends StatelessWidget{
 	@override
@@ -21,7 +22,9 @@ class BookPage extends StatefulWidget{
 
 class BookState extends State<BookPage>{
 	static const routeName = '/Book';
+	//当前章节
 	String chapterContent = "";
+	String chapterName = "";
 	bool offState = false;
 	bool isLoading = false;
 
@@ -30,11 +33,21 @@ class BookState extends State<BookPage>{
 	List<String> chapterCache;
 	//当前源规则
 	Source source;
+	//分页器
+	Paging chapterPage;
+	List<String> pagelist = List<String>();
+	int pagenum = 1;
+
+	//pages merge content
+	BuildContext pagecontext;
+
+	//pageController
+	PageController pageController;
+
 
 	//传参
 	BookPageArguments args;
 	BookState(this.args);
-
 
 	@override
 	void initState() {
@@ -44,9 +57,43 @@ class BookState extends State<BookPage>{
 			//加载爬虫源
 			initdir().then((value){
 				//根据爬虫源 加载列表页
-				initChapter();
+				initChapter().then((value){
+					initPage();
+					//chapterPage.load()
+				});
 			});
 		});
+	}
+
+	//页脚需要页码+章节名 切换页面需要更变章节
+
+	initPage(){
+		if(chapterPage == null){
+			//初始化分页器
+			double _pageSizeWidth = MediaQuery.of(context).size.width - 32;
+			double _pageSizeHeight = MediaQuery.of(context).size.width*1.7;
+			chapterPage = new Paging(size:new Size(_pageSizeWidth,_pageSizeHeight));
+		}
+
+		String content = chapterContent;
+		var ret = chapterPage.layout(content);
+		print(ret);
+		print(chapterPage.maxLength);
+
+		while(chapterPage.layout(content,onSize: false)){
+			String page = content.substring(0,chapterPage.maxLength-1);
+			pagelist.add(page);
+			content = content.substring(chapterPage.maxLength);
+		}
+
+		if(content.length>0){
+			pagelist.add(content);
+		}
+
+		pageController = new PageController(
+			initialPage:pagelist.length,
+			keepPage: true
+		);
 	}
 
 	Future<void> initSource() async {
@@ -59,7 +106,6 @@ class BookState extends State<BookPage>{
 		return await Source.getSourceById(args.Sourceid).then((value){
 			source = value;
 			isLoading = false;
-			print(source);
 			return ;
 		});
 
@@ -73,12 +119,13 @@ class BookState extends State<BookPage>{
 
 		isLoading = true;
 
-		return await Request.getInstance().MutilReqChapter(dir,args.readmark,source.baseUrl).then((List<String> chapterlist){
+		return await Request.getInstance().MutilReqChapter(dir,args.readmark,source).then((List<String> chapterlist){
 			setState(() {
 				isLoading = false;
 				chapterCache = chapterlist;
 				offState = true;
-				print(chapterCache);
+				chapterContent = chapterCache[0];
+				//print(chapterCache);
 			});
 		});
 	}
@@ -108,6 +155,8 @@ class BookState extends State<BookPage>{
 	@override
 	Widget build(BuildContext context){
 		final BookPageArguments args = ModalRoute.of(context).settings.arguments;
+		//分页器获取宽高
+		pagecontext = context;
 
 		return new Scaffold(
 			appBar: new AppBar(
@@ -116,9 +165,7 @@ class BookState extends State<BookPage>{
 			body: Stack(
 				children: <Widget>[
 					//底部刷新容器
-					Container(
-						child: new Text(chapterContent),
-					),
+					buildBodyFunction(),
 					Offstage(
 						//loading进度条
 						offstage: offState,
@@ -128,6 +175,44 @@ class BookState extends State<BookPage>{
 					),
 				],
 			),
+		);
+	}
+
+	///封装方法构建PageView组件
+	PageView buildBodyFunction() {
+		///可实现左右页面滑动切换
+		return PageView(
+			//当页面选中后回调此方法
+			//参数[index]是当前滑动到的页面角标索引 从0开始
+			onPageChanged: (int index){
+				print("当前的页面是 $index");
+				///滑动PageView时，对应切换选择高亮的标签
+				setState(() {
+					pagenum = index;
+				});
+			},
+			//值为flase时 显示第一个页面 然后从左向右开始滑动
+			//值为true时 显示最后一个页面 然后从右向左开始滑动
+			reverse: false,
+			//滑动到页面底部无回弹效果
+			physics: BouncingScrollPhysics(),
+			//横向滑动切换
+			scrollDirection: Axis.horizontal,
+			//页面控制器
+			controller: pageController,
+			//所有的子Widget
+			children: List<Widget>.generate(pagelist.length, (index) => CreatePage(pagelist[index])),
+		);
+	}
+
+	Widget CreatePage(String content){
+		return Container(
+			child:
+			new Text(
+				content,
+				style: const TextStyle(fontSize: 20.0,height: 1.1),
+			),
+			padding: new EdgeInsets.only(right: 16,left: 16,bottom: 20,top: 10),
 		);
 	}
 }

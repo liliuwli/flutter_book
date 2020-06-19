@@ -23,6 +23,10 @@ class Source{
         'chapterUrl':new ParserRule(ParserType.xpath,'//div[@class="box_con"]/div[@id="list"]/dd/a:href'),
     };
 
+    Map<String,ParserRule> ChapterRule = <String,ParserRule>{
+        'chapter':new ParserRule(ParserType.xpath,'//div[@class="content_read"]/div[@class="box_con"]/div[@id="content"]/text()'),
+    };
+
     Source();
 
     static Source getSource(){
