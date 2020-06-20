@@ -254,12 +254,16 @@ class BookChapter{
     String name;
     String chapterUrl;
 
+    //可选参数
+    //场景  如果多个小说源  可能存在章节序数不对应问题  固定sort判断可以保证切源定位不丢失
+    int sortid;
+    String content;
+
     BookChapter(this.name,this.chapterUrl);
 
     @override
     String toString() {
         return 'BookChapter{name: $name} {url: $chapterUrl}';
     }
-
 
 }

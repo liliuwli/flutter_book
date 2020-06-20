@@ -59,11 +59,13 @@ class Request{
         });
     }
 
-    //同时请求多个小说
-    Future<List<String>> MutilReqChapter(List<BookChapter> chapterList,String readmark , Source _source) async {
+    //同时请求多个小说  设计未考虑章节名  可以从url倒推章节名
+    Future<List<BookChapter>> MutilReqChapter(List<BookChapter> chapterList,String readmark , Source _source) async {
         int length = 5;
         int index;
         List<String> RequestUrl = [];
+
+        //根据已读章节名匹配章节记录  （如果出现重复章节名可能有bug）
         if(readmark != null){
             for(int i=0;i<chapterList.length;i++){
                 if(readmark == chapterList[i].name){
@@ -73,41 +75,43 @@ class Request{
             }
         }
 
+        //匹配不到  从头阅读
         if(index == null){
             index = 0;
         }
 
+        //阅读队列  大于剩余章节  剩余章节全部纳入队列
         if(length > chapterList.length-1-index){
             for(int i=index;i<chapterList.length;i++){
-                if( RegExp("http").hasMatch(chapterList[i].chapterUrl.toLowerCase()) ){
-                    RequestUrl.add(chapterList[i].chapterUrl);
-                }else{
-                    RequestUrl.add(_source.baseUrl+chapterList[i].chapterUrl);
-                }
+
+                RequestUrl.add(chapterList[i].chapterUrl);
             }
         }else{
+            //否则从记录点  加载满阅读队列
             for(int i = index;i<(index+length);i++){
-                if( RegExp("http").hasMatch(chapterList[i].chapterUrl.toLowerCase()) ){
-                    RequestUrl.add(chapterList[i].chapterUrl);
-                }else{
-                    RequestUrl.add(_source.baseUrl+chapterList[i].chapterUrl);
-                }
+                RequestUrl.add(chapterList[i].chapterUrl);
             }
         }
 
         if(RequestUrl.length == 0){
-            //阅读到最后
+            //已经阅读到最后一章
             index = chapterList.length - 1;
-            if( RegExp("http").hasMatch(chapterList[index].chapterUrl.toLowerCase()) ){
-                RequestUrl.add(chapterList[index].chapterUrl);
-            }else{
-                RequestUrl.add(_source.baseUrl+chapterList[index].chapterUrl);
-            }
+            RequestUrl.add(chapterList[index].chapterUrl);
         }
 
-        //mark 缺少读取小说内容
-        return await HttpManage.getInstance().MutilRequest(RequestUrl).then((List<String> html){
-            List<String> ret = List<String>();
+
+        List<String> _requestUrl = List<String>();
+        //如果请求是相对路径 补全请求地址
+        RequestUrl.forEach((String _url) {
+            if( !RegExp("http").hasMatch(_url.toLowerCase()) ){
+                _url = _source.baseUrl+_url;
+            }
+            _requestUrl.add(_url);
+        });
+
+        return await HttpManage.getInstance().MutilRequest(_requestUrl).then((List<String> html){
+            //List<String> ret = List<String>();
+            int i = 0;
             html.forEach((String htmlItem) {
                 Fquery.newDocument(htmlItem);
                 List<String> namelist = Fquery.selector(_source.ChapterRule['chapter'].reg,_source.ChapterRule['chapter'].type);
@@ -117,9 +121,11 @@ class Request{
                 });
                 htmlString = htmlString.replaceAll("&nbsp;", " ");
                 htmlString = htmlString.replaceAll(new RegExp("<br[^>]*?>"), "\r\n");
-                ret.add(htmlString);
+                //ret.add(htmlString);
+                chapterList[i].content = htmlString;
+                i++;
             });
-            return ret;
+            return chapterList;
         });
     }
 }
