@@ -9,13 +9,12 @@ class Paging {
 		_textPainter = new TextPainter();
 		_textStyle = new TextStyle(
 			fontSize: 20,
-			height: 1.1
+			height: 1
 		);
 		_textAlign = TextAlign.left;
 		_textDirection = TextDirection.rtl;
 		_textPainter.textAlign = _textAlign;
 		_textPainter.textDirection = _textDirection;
-
 	}
 
 //  BookService bookService = new BookService();
@@ -70,7 +69,7 @@ class Paging {
 			..layout(maxWidth: _size.width);
 		_textPainter.size;
 		_textPainter.didExceedMaxLines;
-		if (false ==onSize) {
+		if (false == onSize) {
 			return _textPainter.didExceedMaxLines ||
 					_textPainter.size.height > _size.height;
 		} else {
