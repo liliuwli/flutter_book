@@ -5,10 +5,6 @@ import 'package:reader/model/search.dart';
 import 'package:reader/model/httputils.dart';
 import 'package:reader/utils/chapterPage.dart';
 
-/**
- *      现有缺陷  忘了携带
- */
-
 class BookScreen extends StatelessWidget{
 	@override
 	Widget build(BuildContext context){
@@ -26,8 +22,9 @@ class BookPage extends StatefulWidget{
 
 class BookState extends State<BookPage>{
 	static const routeName = '/Book';
+	//阅读器
+	SafeArea root;
 	//当前章节
-	String chapterContent = "";
 	String chapterName = "";
 	bool offState = false;
 	bool isLoading = false;
@@ -55,9 +52,8 @@ class BookState extends State<BookPage>{
 
 	//记录末页中心起点
 	double endPageStart;
-	//pagenum更新过快 所以需要记录触碰页 防止倒数第二页触发换章
+
 	double pageWidth;
-	double pageHeight;
 
 	//传参
 	BookPageArguments args;
@@ -79,26 +75,24 @@ class BookState extends State<BookPage>{
 				});
 			});
 		});
+
 	}
 
 	//页脚需要页码+章节名 切换页面需要更变章节
 
-	initPage(){
+	Future<bool> initPage() async {
+
 		if(chapterPage == null){
 			//初始化分页器
-			//double _pageSizeWidth = MediaQuery.of(context).size.width - 32;
 			pageWidth = globalKey.currentContext.size.width;
 			double _pageSizeWidth = globalKey.currentContext.size.width - 32;
 			//30是预留ui的大小 20是一行文本的高度
 			double _pageSizeHeight = globalKey.currentContext.size.height - 30 - 20;
-			double pageHeight = globalKey.currentContext.size.height - 30;
 			chapterPage = new Paging(size:new Size(_pageSizeWidth,_pageSizeHeight));
 		}
 
-		String content = chapterContent;
-		var ret = chapterPage.layout(content);
-		print(ret);
-		print(chapterPage.maxLength);
+		pagelist = List<String>();
+		String content = chapterCache[cacheKey].content;
 
 		while(chapterPage.layout(content,onSize: false)){
 			String page = content.substring(0,chapterPage.maxLength-1);
@@ -110,38 +104,48 @@ class BookState extends State<BookPage>{
 			pagelist.add(content);
 		}
 
-		pageController = new PageController(
-			initialPage:pagelist.length,
-			keepPage: true
-		);
-		endPageStart = pageWidth * (pagelist.length-1);
+		setState(() {
+			endPageStart = pageWidth * (pagelist.length-1);
+
+			pageController = new PageController(
+				initialPage:pagelist.length,
+				keepPage: true
+			);
+
+			root = buildBodyFunction();
+
+		});
 
 		pageController.addListener(() {
 			//偏移敏感度
 			int touchlength = 40;
 
+
 			if(pagenum == pagelist.length - 1){
 				//末页  触发下一章操作
-				if(pageController.offset - endPageStart > touchlength){
+				if(pageController.hasClients && pageController.offset - endPageStart > touchlength){
 					this.nextChapter();
 				}
 			}
 
-			if(endPageStart != null && pageController.offset < endPageStart + touchlength){
+			if(endPageStart != null && pageController.hasClients && pageController.offset < endPageStart + touchlength){
 				isNext = false;
 			}
 
 			if(pagenum == 0){
 				//首页  触发上一章操作
-				if(pageController.offset < -touchlength){
+				if(pageController.hasClients && pageController.offset < -touchlength){
 					this.preChapter();
 				}
 			}
 
-			if(pageController.offset > -touchlength){
+			if(pageController.hasClients && pageController.offset > -touchlength){
 				isPre = false;
 			}
 		});
+
+		///刷新阅读记录
+		return await Search.FreshMark(chapterCache[cacheKey].name, chapterCache[cacheKey].sortid, args.name);
 	}
 
 	//章节切换  判断是否为最后一章
@@ -156,12 +160,24 @@ class BookState extends State<BookPage>{
 			offState = false;
 		});
 
-		print("下一章");
-
-
-		setState(() {
-			isLoading = false;
-			offState = true;
+		cacheKey++;
+		//重置坐标为起点
+		pageController.animateTo(0, duration: const Duration(milliseconds: 100), curve: Interval(
+			0.0,
+			0.1,
+			curve: Curves.easeIn,
+		));
+		pagenum = 0;
+		initPage().then((res){
+			setState(() {
+				isLoading = false;
+				offState = true;
+			});
+		}).then((_){
+			if(chapterCache.length - cacheKey == 1){
+				//缓存队列 即将空了 异步初始化缓存 总量5 剩余量1
+				initChapter();
+			}
 		});
 	}
 
@@ -171,10 +187,66 @@ class BookState extends State<BookPage>{
 			return;
 		}
 
-		isLoading = true;
-		isPre = true;
-		print("上一章");
-		isLoading = false;
+		setState(() {
+			isLoading = true;
+			isNext = true;
+			offState = false;
+		});
+
+		if(cacheKey != 0){
+			//队列未刷新可以直接切换文本
+			cacheKey--;
+
+			//重置坐标为终点
+			pageController.animateTo(pageWidth * (pagelist.length - 1), duration: const Duration(milliseconds: 100), curve: Interval(
+				0.0,
+				0.1,
+				curve: Curves.easeIn,
+			));
+			pagenum = pagelist.length-1;
+
+			initPage().then((res){
+				setState(() {
+					isLoading = false;
+					offState = true;
+				});
+			});
+		}else{
+			//如果队列无数据 需要重新请求  队列设计问题
+			Search.BackMark(chapterCache[cacheKey].name, chapterCache[cacheKey].sortid ,args.name).then((bool isUpdate){
+				if (isUpdate) {
+					//重新初始化界面
+					setState(() {
+						isLoading = false;
+						offState = true;
+					});
+
+					//根据爬虫源 加载列表页
+					initChapter().then((value){
+						//对文本进行分页
+						initPage().then((_){
+
+							//重置坐标为终点
+							pageController.animateTo(pageWidth * (pagelist.length - 1), duration: const Duration(milliseconds: 100), curve: Interval(
+								0.0,
+								0.1,
+								curve: Curves.easeIn,
+							));
+							pagenum = pagelist.length-1;
+						});
+					});
+				}else{
+					initPage().then((res){
+						setState(() {
+							isLoading = false;
+							offState = true;
+						});
+					});
+					return ;
+				}
+			});
+		}
+
 	}
 
 	Future<void> initSource() async {
@@ -200,12 +272,13 @@ class BookState extends State<BookPage>{
 
 		isLoading = true;
 
-		return await Request.getInstance().MutilReqChapter(dir,args.readmark,source).then((List<BookChapter> chapterlist){
+		return await Request.getInstance().MutilReqChapter(dir,args.name,source).then((List<BookChapter> chapterlist){
 			setState(() {
 				isLoading = false;
-				chapterCache = chapterlist;
 				offState = true;
-				chapterContent = chapterCache[cacheKey].content;
+				chapterCache = chapterlist;
+				cacheKey = 0;
+
 			});
 		});
 	}
@@ -244,8 +317,8 @@ class BookState extends State<BookPage>{
 			),
 			body: Stack(
 				children: <Widget>[
-					//底部刷新容器
-					buildBodyFunction(),
+					//阅读器
+					root = buildBodyFunction(),
 					Offstage(
 						//loading进度条
 						offstage: offState,
@@ -263,27 +336,25 @@ class BookState extends State<BookPage>{
 		///可实现左右页面滑动切换
 		return new SafeArea(
 			child:PageView(
-						//当页面选中后回调此方法
-						//参数[index]是当前滑动到的页面角标索引 从0开始
-						onPageChanged: (int index){
-							print("当前的页面是 $index");
-							///滑动PageView时，对应切换选择高亮的标签
-							setState(() {
-								pagenum = index;
-							});
-						},
-						//值为flase时 显示第一个页面 然后从左向右开始滑动
-						//值为true时 显示最后一个页面 然后从右向左开始滑动
-						reverse: false,
-						//滑动到页面底部无回弹效果
-						physics: BouncingScrollPhysics(),
-						//横向滑动切换
-						scrollDirection: Axis.horizontal,
-						//页面控制器
-						controller: pageController,
-						//所有的子Widget
-						children: List<Widget>.generate(pagelist.length, (index) => CreatePage(pagelist[index])),
-					),
+				//当页面选中后回调此方法
+				//参数[index]是当前滑动到的页面角标索引 从0开始
+				onPageChanged: (int index){
+					setState(() {
+						pagenum = index;
+					});
+				},
+				//值为flase时 显示第一个页面 然后从左向右开始滑动
+				//值为true时 显示最后一个页面 然后从右向左开始滑动
+				reverse: false,
+				//滑动到页面底部无回弹效果
+				physics: BouncingScrollPhysics(),
+				//横向滑动切换
+				scrollDirection: Axis.horizontal,
+				//页面控制器
+				controller: pageController,
+				//所有的子Widget
+				children: List<Widget>.generate(pagelist.length, (index) => CreatePage(pagelist[index])),
+			),
 			key: globalKey,
 		);
 	}
@@ -298,7 +369,6 @@ class BookState extends State<BookPage>{
 						style: const TextStyle(fontSize: 20.0,height: 1),
 					),
 					padding: new EdgeInsets.only(right: 16,left: 16,top: 10,bottom: 0),
-					height: pageHeight,
 				),
 
 				//提示栏

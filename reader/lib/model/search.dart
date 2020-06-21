@@ -3,7 +3,61 @@ import 'package:reader/h.dart';
 import 'package:flutter/material.dart';
 import 'cache.dart';
 import 'dart:convert';
+import 'package:reader/model/httputils.dart';
+import 'package:reader/model/source.dart';
+
 class Search{
+
+    //倒退已读
+    static Future<bool> BackMark(String chaptername , int sortid , String bookname) async {
+        return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult) async {
+            if(_searchResult == null){
+                //书架无数据  异常情况
+                return false;
+            }else{
+                int _backid;
+                int sourceid = _searchResult.sourcelist.bookSourceList[_searchResult.index].id;
+
+                //寻找解析数据源
+                return await Source.getSourceById(sourceid).then((Source source) async {
+                    //寻找小说目录
+                    return await Request.getInstance().ParserChapterList(_searchResult.bookinfolist.bookMsgInfoList[_searchResult.index].booklist, source).then((List<BookChapter> chapterlist) async {
+                        for(int i=0;i<chapterlist.length;i++){
+                            if(chaptername == chapterlist[i].name){
+                                _backid = i;
+                                break;
+                            }
+                        }
+
+                        //如果未匹配到 或者 为第一章
+                        if(_backid == null || _backid == 0){
+                            return false;
+                        }else{
+                            _backid--;
+                           String newreadmark =  chapterlist[_backid].name;
+
+                           return await FreshMark(newreadmark, _backid , bookname);
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    //刷新已读
+    static Future<bool> FreshMark(String chaptername , int sortid , String bookname) async {
+        return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult) async {
+            if(_searchResult == null){
+                //书架无数据  异常情况
+                return false;
+            }else{
+                _searchResult.readmark = chaptername;
+                await SetBookShelf(_searchResult);
+                return true;
+            }
+        });
+    }
+
     static Future<List<String>> SearchHistory() {
         Cache.init();
         return Cache.GetList('history').then((value) {
@@ -23,6 +77,28 @@ class Search{
     static Future<void> ClearSearchHistory() {
         Cache.init();
         return Cache.remove('history');
+    }
+
+    //获取书架指定书籍信息
+    static Future<SearchResult>getBookShelfByName(String bookname) async{
+        Cache.init();
+
+        //书籍内容
+        SearchResult bookinfo;
+
+        return await Cache.GetList('bookshelf').then((List<String> _bookshelf){
+            if(_bookshelf == null){
+                return null;
+            }else{
+                _bookshelf.forEach((String item){
+                    SearchResult result = SearchResult.fromJson(jsonDecode(item));
+                    if(result.name == bookname){
+                        bookinfo = result;
+                    }
+                });
+                return bookinfo;
+            }
+        });
     }
 
     //获取书架信息

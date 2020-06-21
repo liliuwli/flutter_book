@@ -1,3 +1,5 @@
+import 'package:reader/model/search.dart';
+
 import 'httpmanger.dart';
 import 'source.dart';
 import 'package:reader/utils/log.dart';
@@ -60,72 +62,83 @@ class Request{
     }
 
     //同时请求多个小说  设计未考虑章节名  可以从url倒推章节名
-    Future<List<BookChapter>> MutilReqChapter(List<BookChapter> chapterList,String readmark , Source _source) async {
+    Future<List<BookChapter>> MutilReqChapter(List<BookChapter> chapterList,String bookname , Source _source) async {
         int length = 5;
         int index;
-        List<String> RequestUrl = [];
+        //待处理队列
+        List<String> RequestUrl = List<String>();
+        List<BookChapter> waitload = List<BookChapter>();
 
-        //根据已读章节名匹配章节记录  （如果出现重复章节名可能有bug）
-        if(readmark != null){
-            for(int i=0;i<chapterList.length;i++){
-                if(readmark == chapterList[i].name){
-                    index = i;
-                    break;
+        String readmark;
+
+        return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult){
+            readmark = _searchResult.readmark;
+            //根据已读章节名匹配章节记录  （如果出现重复章节名可能有bug）
+            if(readmark != null){
+                for(int i=0;i<chapterList.length;i++){
+                    if(readmark == chapterList[i].name){
+                        index = i;
+                        break;
+                    }
                 }
             }
-        }
 
-        //匹配不到  从头阅读
-        if(index == null){
-            index = 0;
-        }
-
-        //阅读队列  大于剩余章节  剩余章节全部纳入队列
-        if(length > chapterList.length-1-index){
-            for(int i=index;i<chapterList.length;i++){
-
-                RequestUrl.add(chapterList[i].chapterUrl);
+            //匹配不到  从头阅读
+            if(index == null){
+                index = 0;
             }
-        }else{
-            //否则从记录点  加载满阅读队列
-            for(int i = index;i<(index+length);i++){
-                RequestUrl.add(chapterList[i].chapterUrl);
+
+            //阅读队列  大于剩余章节  剩余章节全部纳入队列
+            if(length > chapterList.length-1-index){
+                for(int i=index;i<chapterList.length;i++){
+                    RequestUrl.add(chapterList[i].chapterUrl);
+                    waitload.add(chapterList[i]);
+                }
+            }else{
+                //否则从记录点  加载满阅读队列
+                for(int i = index;i<(index+length);i++){
+                    RequestUrl.add(chapterList[i].chapterUrl);
+                    waitload.add(chapterList[i]);
+                }
             }
-        }
 
-        if(RequestUrl.length == 0){
-            //已经阅读到最后一章
-            index = chapterList.length - 1;
-            RequestUrl.add(chapterList[index].chapterUrl);
-        }
-
-
-        List<String> _requestUrl = List<String>();
-        //如果请求是相对路径 补全请求地址
-        RequestUrl.forEach((String _url) {
-            if( !RegExp("http").hasMatch(_url.toLowerCase()) ){
-                _url = _source.baseUrl+_url;
+            if(RequestUrl.length == 0){
+                //已经阅读到最后一章
+                index = chapterList.length - 1;
+                RequestUrl.add(chapterList[index].chapterUrl);
+                waitload.add(chapterList[index]);
             }
-            _requestUrl.add(_url);
-        });
 
-        return await HttpManage.getInstance().MutilRequest(_requestUrl).then((List<String> html){
-            //List<String> ret = List<String>();
-            int i = 0;
-            html.forEach((String htmlItem) {
-                Fquery.newDocument(htmlItem);
-                List<String> namelist = Fquery.selector(_source.ChapterRule['chapter'].reg,_source.ChapterRule['chapter'].type);
-                String htmlString = "";
-                namelist.forEach((item) {
-                    htmlString += item;
-                });
-                htmlString = htmlString.replaceAll("&nbsp;", " ");
-                htmlString = htmlString.replaceAll(new RegExp("<br[^>]*?>"), "\r\n");
-                //ret.add(htmlString);
-                chapterList[i].content = htmlString;
-                i++;
+
+            List<String> _requestUrl = List<String>();
+            //如果请求是相对路径 补全请求地址
+            RequestUrl.forEach((String _url) {
+                if( !RegExp("http").hasMatch(_url.toLowerCase()) ){
+                    _url = _source.baseUrl+_url;
+                }
+                _requestUrl.add(_url);
             });
-            return chapterList;
+            return _requestUrl;
+        }).then((List<String> _requestUrl) async {
+            return await HttpManage.getInstance().MutilRequest(_requestUrl).then((List<String> html){
+
+                int i = 0;
+                html.forEach((String htmlItem) {
+                    Fquery.newDocument(htmlItem);
+                    List<String> namelist = Fquery.selector(_source.ChapterRule['chapter'].reg,_source.ChapterRule['chapter'].type);
+                    String htmlString = "";
+                    namelist.forEach((item) {
+                        htmlString += item;
+                    });
+                    htmlString = htmlString.replaceAll("&nbsp;", " ");
+                    htmlString = htmlString.replaceAll(new RegExp("<br[^>]*?>"), "\r\n");
+
+                    waitload[i].content = htmlString;
+                    waitload[i].sortid = index+i;
+                    i++;
+                });
+                return waitload;
+            });
         });
     }
 }
