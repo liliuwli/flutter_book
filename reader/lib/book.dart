@@ -376,24 +376,29 @@ class BookState extends State<BookPage>{
 				);
 			case ConnectionState.done:
 				if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+
+				List<BookChapter> chapterDir = snapshot.data[0];
+				int readsort = snapshot.data[1];
+
 				return new ListView.builder(
-					//padding: const EdgeInsets.only(top:12.0,bottom: 12),
 					shrinkWrap: true,
-					itemCount: snapshot.data.length,
+					controller: new ScrollController(
+						initialScrollOffset: 56 * readsort.ceilToDouble()
+					),
+					itemCount: chapterDir.length,
 					itemBuilder:(context,i){
 						return new GestureDetector(
 							child: new ListTile(
-								title: isCache(snapshot.data[i].chapterUrl)
-										?new Text(snapshot.data[i].name,style: CacheStyle)
-										:new Text(snapshot.data[i].name),
+								title: isCache(chapterDir[i].chapterUrl)
+										?new Text(chapterDir[i].name,style: CacheStyle)
+										:new Text(chapterDir[i].name),
 							),
 							onTap: (){
-								Search.FreshMark(snapshot.data[i].name,0,args.name).then((_){
+								Search.FreshMark(chapterDir[i].name,0,args.name).then((_){
 									//根据爬虫源 加载列表页
 									initChapter().then((value){
 										//对文本进行分页
 										initPage().then((_){
-
 											//重置坐标
 											pageController.animateTo(0, duration: const Duration(milliseconds: 100), curve: Interval(
 												0.0,
@@ -414,10 +419,15 @@ class BookState extends State<BookPage>{
 		}
 	}
 
+	//用书名获取目录  用当前阅读章节名获取章节序号
+	_getDirData(String bookname , String chaptername) async {
+		return await Future.wait([Search.BookDir(bookname),Search.GetSortIdByName(bookname,chaptername)]);
+	}
+
 	Widget getbookdir(String bookname ,Function state) {
 		return FutureBuilder(
 			builder: _buildFuture,
-			future: Search.BookDir(bookname), // 用户定义的需要异步执行的代码，类型为Future<String>或者null的变量或函数
+			future: _getDirData(bookname,chapterCache[cacheKey].name), // 用户定义的需要异步执行的代码，类型为Future<String>或者null的变量或函数
 		);
 	}
 

@@ -7,6 +7,18 @@ import 'package:reader/model/httputils.dart';
 import 'package:reader/model/source.dart';
 
 class Search{
+    static Future<int> GetSortIdByName(String bookname,String chaptername) async {
+        return await Search.BookDir(bookname).then((List<BookChapter> chapterlist){
+            int ret;
+            for(int i=0;i<chapterlist.length;i++){
+                if(chaptername == chapterlist[i].name){
+                    ret = i;
+                    break;
+                }
+            }
+            return ret==null?0:ret;
+        });
+    }
 
     //根据书架内书源反推书的目录
     static Future<List<BookChapter>> BookDir(String bookname) async {
