@@ -107,8 +107,8 @@ class AppState extends State<App> {
 	void _clickMenu(){
 		print("点击成功，后面改成路由跳转");
 		Navigator.pushNamed(
-				context,
-				"/Menu"
+			context,
+			"/Menu"
 		);
 		return;
 	}
@@ -117,18 +117,8 @@ class AppState extends State<App> {
 		focusNode.unfocus();
 		print("点击成功，但是并未触发小键盘，后面改成路由跳转");
 		Navigator.pushNamed(
-				context,
-				"/Search"
-		);
-		return;
-	}
-
-	void _clickBook(num id){
-		print("点击成功，但是并未触发小键盘，后面改成路由跳转");
-		Navigator.pushNamed(
-				context,
-				//"/Book"
-				"/Test"
+			context,
+			"/Search"
 		);
 		return;
 	}
@@ -241,12 +231,21 @@ class BookItem extends StatelessWidget {
 					)
 				),
 			),
-			onTap:(){
-				Navigator.pushNamed(
+			onTap:() async {
+				final result = await Navigator.pushNamed(
 					context,
 					"/Book",
 					arguments: BookPageArguments(name,source.id,chapterlisturl,readmark)
 				);
+
+				///note : 缺少刷新图标
+				_appState.setState(() {
+					Search.getBookShelf().then((List<SearchResult> _bookshelf){
+						_appState.setState(() {
+							_appState.bookshelf = _bookshelf;
+						});
+					});
+				});
 			}
 		);
 	}

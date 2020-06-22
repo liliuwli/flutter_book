@@ -6,16 +6,31 @@ import 'package:reader/model/httputils.dart';
 import 'package:reader/utils/chapterPage.dart';
 
 class BookScreen extends StatelessWidget{
+	Widget page;
+	BuildContext PageContext;
+	BookPageArguments args;
 	@override
 	Widget build(BuildContext context){
-		final BookPageArguments args = ModalRoute.of(context).settings.arguments;
-		return new BookPage(args);
+		PageContext = context;
+		args = ModalRoute.of(context).settings.arguments;
+		return WillPopScope(
+			child: new BookPage(args),
+			onWillPop:_onWillPop,
+		);
+	}
+
+	Future<bool> _onWillPop(){
+		Navigator.pop(PageContext,args.name);
+		return new Future.value(false);
 	}
 }
+
+
 
 class BookPage extends StatefulWidget{
 	BookPageArguments args;
 	BookPage(this.args);
+
 	@override
 	createState() => new BookState(args);
 }
