@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'search.dart';
 import 'menu.dart';
@@ -5,11 +7,21 @@ import 'book.dart';
 import 'h.dart';
 import 'model/search.dart';
 
+import 'model/source.dart';
+
 void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
+		/*
+			Source intanceofSource = Source.getSource();
+			String jsontext = jsonEncode(intanceofSource);
+			print(jsontext);
+			Source item = Source.fromJson(json.decode(jsontext));
+			print(item);
+		*/
+
 		return new MaterialApp(
 			title: 'Flutter Reader',
 			home: new App(),
