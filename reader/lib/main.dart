@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'search.dart';
 import 'menu.dart';
 import 'book.dart';
-import 'test.dart';
 import 'h.dart';
 import 'model/search.dart';
 
@@ -16,7 +15,6 @@ class MyApp extends StatelessWidget {
 			home: new App(),
 			routes: {
 				'/Search':(context) => new SearchScreen(),
-				'/Test':(context) => new TestScreen(),
 				'/Menu':(context) => new MenuScreen(),
 				'/Book':(context) => new BookScreen(),
 			},

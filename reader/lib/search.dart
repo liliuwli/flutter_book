@@ -409,7 +409,7 @@ class SearchItem extends StatelessWidget {
 	void _showBookActionsDialog(BuildContext context, String name, List<BookMsgInfo> bookinfo, List<BookSource> sourcelist, int index){
 		//显示result信息
 		showDialog(
-				context: context,
+			context: context,
 				barrierDismissible: true,           //点击空白退出
 				builder: (BuildContext context) {
 					return StatefulBuilder(builder: (context, state)

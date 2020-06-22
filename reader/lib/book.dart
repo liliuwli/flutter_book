@@ -320,6 +320,7 @@ class BookState extends State<BookPage>{
 		});
 	}
 
+	//初始化阅读器UI
 	@override
 	Widget build(BuildContext context){
 		final BookPageArguments args = ModalRoute.of(context).settings.arguments;
@@ -329,6 +330,10 @@ class BookState extends State<BookPage>{
 		return new Scaffold(
 			appBar: new AppBar(
 				title: new Text(args.name),
+				actions: <Widget>[
+					//菜单键
+					new IconButton(icon:new Icon(Icons.book),onPressed: showDir,),
+				],
 			),
 			body: Stack(
 				children: <Widget>[
@@ -343,6 +348,112 @@ class BookState extends State<BookPage>{
 					),
 				],
 			),
+		);
+	}
+
+	bool isCache(String url){
+		bool ret;
+		chapterCache.forEach((BookChapter element) {
+			if(element.chapterUrl == url){
+				ret = true;
+			}
+		});
+
+		if(ret == null){
+			return false;
+		}else{
+			return true;
+		}
+	}
+
+	//根据异步状态生成widget
+	Widget _buildFuture(BuildContext context, AsyncSnapshot snapshot) {
+		final CacheStyle = const TextStyle(fontWeight: FontWeight.bold);
+		switch (snapshot.connectionState) {
+			case ConnectionState.waiting:
+				return Center(
+					child: CircularProgressIndicator(),
+				);
+			case ConnectionState.done:
+				if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+				return new ListView.builder(
+					//padding: const EdgeInsets.only(top:12.0,bottom: 12),
+					shrinkWrap: true,
+					itemCount: snapshot.data.length,
+					itemBuilder:(context,i){
+						return new GestureDetector(
+							child: new ListTile(
+								title: isCache(snapshot.data[i].chapterUrl)
+										?new Text(snapshot.data[i].name,style: CacheStyle)
+										:new Text(snapshot.data[i].name),
+							),
+							onTap: (){
+								Search.FreshMark(snapshot.data[i].name,0,args.name).then((_){
+									//根据爬虫源 加载列表页
+									initChapter().then((value){
+										//对文本进行分页
+										initPage().then((_){
+
+											//重置坐标
+											pageController.animateTo(0, duration: const Duration(milliseconds: 100), curve: Interval(
+												0.0,
+												0.1,
+												curve: Curves.easeIn,
+											));
+											pagenum = 0;
+											Navigator.of(context).pop();
+										});
+									});
+								});
+							},
+						);
+					},
+				);
+			default:
+				return null;
+		}
+	}
+
+	Widget getbookdir(String bookname ,Function state) {
+		return FutureBuilder(
+			builder: _buildFuture,
+			future: Search.BookDir(bookname), // 用户定义的需要异步执行的代码，类型为Future<String>或者null的变量或函数
+		);
+	}
+
+	//显示章节列表
+	void showDir(){
+		showDialog(
+			context: context,
+			barrierDismissible: true,           //点击空白退出
+			builder: (BuildContext context) {
+				return StatefulBuilder(builder: (context, state)
+				{
+					return AlertDialog(
+						content: new Container(
+							//显示详情
+							child: getbookdir(args.name,state),
+							decoration: BoxDecoration(
+									border: Border(
+										bottom: BorderSide(
+											width: 1,
+											color: Colors.black26
+										)
+									)
+							),
+							width: MediaQuery
+									.of(context)
+									.size
+									.width * 0.8,
+							height: MediaQuery
+									.of(context)
+									.size
+									.height * 0.7,
+						)
+
+					);
+				});
+			}
 		);
 	}
 

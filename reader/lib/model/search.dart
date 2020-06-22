@@ -8,38 +8,39 @@ import 'package:reader/model/source.dart';
 
 class Search{
 
+    //根据书架内书源反推书的目录
+    static Future<List<BookChapter>> BookDir(String bookname) async {
+        return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult) async {
+            int sourceid = _searchResult.sourcelist.bookSourceList[_searchResult.index].id;
+
+            //寻找解析数据源
+            return await Source.getSourceById(sourceid).then((Source source) async {
+                //寻找小说目录
+                return await Request.getInstance().ParserChapterList(_searchResult.bookinfolist.bookMsgInfoList[_searchResult.index].booklist, source);
+            });
+        });
+    }
+
     //倒退已读
     static Future<bool> BackMark(String chaptername , int sortid , String bookname) async {
-        return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult) async {
-            if(_searchResult == null){
-                //书架无数据  异常情况
+        int _backid;
+
+        return await Search.BookDir(bookname).then((List<BookChapter> chapterlist) async {
+            for(int i=0;i<chapterlist.length;i++){
+                if(chaptername == chapterlist[i].name){
+                    _backid = i;
+                    break;
+                }
+            }
+
+            //如果未匹配到 或者 为第一章
+            if(_backid == null || _backid == 0){
                 return false;
             }else{
-                int _backid;
-                int sourceid = _searchResult.sourcelist.bookSourceList[_searchResult.index].id;
+                _backid--;
+                String newreadmark =  chapterlist[_backid].name;
 
-                //寻找解析数据源
-                return await Source.getSourceById(sourceid).then((Source source) async {
-                    //寻找小说目录
-                    return await Request.getInstance().ParserChapterList(_searchResult.bookinfolist.bookMsgInfoList[_searchResult.index].booklist, source).then((List<BookChapter> chapterlist) async {
-                        for(int i=0;i<chapterlist.length;i++){
-                            if(chaptername == chapterlist[i].name){
-                                _backid = i;
-                                break;
-                            }
-                        }
-
-                        //如果未匹配到 或者 为第一章
-                        if(_backid == null || _backid == 0){
-                            return false;
-                        }else{
-                            _backid--;
-                           String newreadmark =  chapterlist[_backid].name;
-
-                           return await FreshMark(newreadmark, _backid , bookname);
-                        }
-                    });
-                });
+                return await FreshMark(newreadmark, _backid , bookname);
             }
         });
     }
