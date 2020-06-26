@@ -7,6 +7,8 @@ import 'package:reader/h.dart';
 
 import 'package:reader/fquery/fquery.dart';
 
+import 'package:dio/dio.dart';
+
 class Request{
     static Request _instance;
 
@@ -20,6 +22,32 @@ class Request{
 
     Request(){
 
+    }
+
+    Future<List<SearchResult>> SearchBookBySource(String keyword,Source source) async {
+        return await HttpManage.getInstance().asyncGet(source.baseUrl+source.SearchUrl, {source.SearchKey:keyword})
+        .then((Response htmlRsp){
+            if(htmlRsp.statusCode == 200){
+                ///获取内容
+                Fquery.newDocument(htmlRsp.data);
+                List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
+                List<String> imglist = Fquery.selector(source.SearchRule['imglist'].reg,source.SearchRule['imglist'].type);
+                List<String> namelist = Fquery.selector(source.SearchRule['namelist'].reg,source.SearchRule['namelist'].type);
+                List<String> desclist = Fquery.selector(source.SearchRule['desclist'].reg,source.SearchRule['desclist'].type);
+                List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
+                List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
+
+                return new List.generate(booklist.length, (index){
+                    SearchResult _searchResult = new SearchResult(namelist[index]);
+
+                    _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index]]));
+                    _searchResult.addSource(new BookSource(source.name,source.id));
+                    return _searchResult;
+                });
+            }else{
+                return null;
+            }
+        });
     }
 
     //后续发展多源异步获取数据
@@ -52,7 +80,8 @@ class Request{
 
     //异步获取小说目录
     Future<List<BookChapter>> ParserChapterList(String chapterlisturl,Source source) async {
-        return await HttpManage.getInstance().asyncGet(chapterlisturl, {}).then((String html){
+        return await HttpManage.getInstance().asyncGet(chapterlisturl, {}).then((Response rsp){
+            String html = rsp.data;
             Fquery.newDocument(html);
             List<String> namelist = Fquery.selector(source.ListRule['chapterName'].reg,source.ListRule['chapterName'].type);
             List<String> urllist = Fquery.selector(source.ListRule['chapterUrl'].reg,source.ListRule['chapterUrl'].type);

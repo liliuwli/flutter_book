@@ -45,13 +45,13 @@ class HttpManage{
         return _completer.future;
     }
 
-    Future<String> asyncGet(String url , Map<String, dynamic> params){
+    Future<Response> asyncGet(String url , Map<String, dynamic> params){
         return _asyncHttp(url, GET, params);
     }
 
-    Future<String> _asyncHttp(String url, String method, Map<String, dynamic> params) async {
+    Future<Response> _asyncHttp(String url, String method, Map<String, dynamic> params) async {
         Response response;
-        Completer<String> _completer;
+        Completer<Response> _completer;
 
         if (method == GET) {
             if (params != null && params.isNotEmpty) {
@@ -69,9 +69,10 @@ class HttpManage{
         if(is_utf8){
             data = utf8.decode(response.data);
         }
+        response.data = data;
 
-        _completer = Completer<String>();
-        _completer.complete(data);
+        _completer = Completer<Response>();
+        _completer.complete(response);
         return _completer.future;
     }
 

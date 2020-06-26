@@ -451,6 +451,9 @@ class BookState extends State<BookPage>{
 
 	//显示章节列表
 	void showDir(){
+		if(isLoading){
+			return ;
+		}
 		showDialog(
 			context: context,
 			barrierDismissible: true,           //点击空白退出
