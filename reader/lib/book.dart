@@ -5,6 +5,9 @@ import 'package:reader/model/search.dart';
 import 'package:reader/model/httputils.dart';
 import 'package:reader/utils/chapterPage.dart';
 
+//Toast弹窗
+import 'package:fluttertoast/fluttertoast.dart';
+
 class BookScreen extends StatelessWidget{
 	Widget page;
 	BuildContext PageContext;
@@ -175,25 +178,40 @@ class BookState extends State<BookPage>{
 			offState = false;
 		});
 
-		cacheKey++;
-		//重置坐标为起点
-		pageController.animateTo(0, duration: const Duration(milliseconds: 100), curve: Interval(
-			0.0,
-			0.1,
-			curve: Curves.easeIn,
-		));
-		pagenum = 0;
-		initPage().then((res){
-			setState(() {
-				isLoading = false;
-				offState = true;
+		if(chapterCache.length - cacheKey == 1 && chapterCache.length < 5){
+			//最后一章 mark 追书模式
+			Fluttertoast.showToast(
+				msg: "所有章节阅读完毕",
+				toastLength: Toast.LENGTH_SHORT,
+				gravity: ToastGravity.CENTER,
+				timeInSecForIos: 1
+			).then((_){
+				setState(() {
+					isLoading = false;
+					offState = true;
+				});
 			});
-		}).then((_){
-			if(chapterCache.length - cacheKey == 1){
-				//缓存队列 即将空了 异步初始化缓存 总量5 剩余量1
-				initChapter();
-			}
-		});
+		}else{
+			cacheKey++;
+			//重置坐标为起点
+			pageController.animateTo(0, duration: const Duration(milliseconds: 100), curve: Interval(
+				0.0,
+				0.1,
+				curve: Curves.easeIn,
+			));
+			pagenum = 0;
+			initPage().then((res){
+				setState(() {
+					isLoading = false;
+					offState = true;
+				});
+			}).then((_){
+				if(chapterCache.length - cacheKey == 1){
+					//缓存队列 即将空了 异步初始化缓存 总量5 剩余量1
+					initChapter();
+				}
+			});
+		}
 	}
 
 	//章节切换 需要判断是否为第一章

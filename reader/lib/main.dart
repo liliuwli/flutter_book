@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'search.dart';
 import 'menu.dart';
@@ -14,14 +12,6 @@ void main() => runApp(new MyApp());
 class MyApp extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
-		/*
-			Source intanceofSource = Source.getSource();
-			String jsontext = jsonEncode(intanceofSource);
-			print(jsontext);
-			Source item = Source.fromJson(json.decode(jsontext));
-			print(item);
-		*/
-
 		return new MaterialApp(
 			title: 'Flutter Reader',
 			home: new App(),
@@ -74,10 +64,7 @@ class AppState extends State<App> {
 		return new Scaffold(
 			appBar: new AppBar(
 				title: new Text('阅读'),
-				actions: <Widget>[
-					//菜单键
-					new IconButton(icon:new Icon(Icons.list),onPressed: _clickMenu,),
-				],
+				actions: <Widget>[buildMenu()],
 			),
 			body: new Column(
 				children: [
@@ -114,8 +101,41 @@ class AppState extends State<App> {
 		);
 	}
 
-	void _clickMenu(){
-		print("点击成功，后面改成路由跳转");
+	//构建菜单
+	Widget buildMenu(){
+		return PopupMenuButton<String>(
+			itemBuilder: (BuildContext context) =>
+			<PopupMenuEntry<String>>[
+				PopupMenuItem(
+					child: new Text('书源管理'),
+					value: "sourcelist",
+				),
+				PopupMenuItem(
+					child: new Text('关于'),
+					value: "about",
+				)
+			],
+
+			onSelected: (String action){
+				switch(action){
+					case "sourcelist":
+						_clickSourcelist();
+						break;
+					case "about":
+						_clickAbout();
+						break;
+				}
+			},
+		);
+	}
+
+	void _clickAbout(){
+		//关于软件
+
+	}
+
+	//书源操作
+	void _clickSourcelist(){
 		Navigator.pushNamed(
 			context,
 			"/Menu"
@@ -123,13 +143,21 @@ class AppState extends State<App> {
 		return;
 	}
 
-	void _clickSearch(){
+	//跳转搜索页面
+	void _clickSearch() async {
 		focusNode.unfocus();
-		print("点击成功，但是并未触发小键盘，后面改成路由跳转");
-		Navigator.pushNamed(
+
+		final result = await Navigator.pushNamed(
 			context,
 			"/Search"
 		);
+
+		//fresh
+		Search.getBookShelf().then((List<SearchResult> _bookshelf){
+			setState(() {
+				bookshelf = _bookshelf;
+			});
+		});
 		return;
 	}
 }

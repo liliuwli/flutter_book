@@ -1,19 +1,27 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'h.dart';
 import 'utils/common.dart';
 import 'model/search.dart';
-import 'model/source.dart';
 import 'model/httputils.dart';
-import 'model/cache.dart';
+import 'dart:async';
 
 class SearchScreen extends StatelessWidget{
+	BuildContext PageContext;
 	@override
 	Widget build(BuildContext context){
-		return new SearchPage();
+		PageContext = context;
+		return WillPopScope(
+			child: new SearchPage(),
+			onWillPop:_onWillPop,
+		);
+	}
+
+	Future<bool> _onWillPop(){
+		Navigator.pop(PageContext);
+		return new Future.value(false);
 	}
 }
+
 
 class SearchPage extends StatefulWidget{
 	@override
@@ -40,12 +48,25 @@ class SearchState extends State<SearchPage>{
 	@override
 	void initState() {
 		super.initState();
-		getHistoryData();
-		getBookShelf();
+		searchInit().then((_){
+			setState(() {
+				offState = true;
+			});
+		});
+	}
+
+	//初始化页面数据
+	Future<List<void>> searchInit() async{
+		Completer<List<void>> _completer;
+		final ret = await Future.wait([getBookShelf(),getHistoryData()]);
+
+		_completer = Completer<List<void>>();
+		_completer.complete(ret);
+		return _completer.future;
 	}
 
 	//获取书架信息
-	void getBookShelf(){
+	Future<void> getBookShelf() async {
 		if (isLoadBookShelf) {
 			return;
 		}
@@ -53,7 +74,7 @@ class SearchState extends State<SearchPage>{
 			isLoadBookShelf = true;
 		});
 
-		Search.getBookShelf().then((List<SearchResult> _bookshelf){
+		return await Search.getBookShelf().then((List<SearchResult> _bookshelf){
 			setState(() {
 				bookshelf = _bookshelf;
 				isLoadBookShelf = false;
@@ -62,7 +83,7 @@ class SearchState extends State<SearchPage>{
 	}
 
 	//获取历史数据
-	void getHistoryData() {
+	Future<void> getHistoryData() async {
 		if (isLoading) {
 			return;
 		}
@@ -70,11 +91,10 @@ class SearchState extends State<SearchPage>{
 			isLoading = true;
 		});
 
-		Search.SearchHistory().then((List<String> _history){
+		return await Search.SearchHistory().then((List<String> _history){
 			setState(() {
 				isLoading = false;
 				history = _history;
-				offState = true;
 			});
 		});
 	}
@@ -136,6 +156,7 @@ class SearchState extends State<SearchPage>{
 			_searchstate = 1;
 			offState = false;
 		});
+
 		textEditingController.text = searchtext;
 		_delIcon = true;
 
@@ -224,7 +245,7 @@ class SearchState extends State<SearchPage>{
 					itemCount: _searchresult.length,
 					itemBuilder:(context,i){
 						if( _searchresult[i] != null ){
-							return new SearchItem(_searchresult[i]);
+							return new SearchItem(_searchresult[i],bookshelf);
 						}else{
 							return new Text("");
 						}
@@ -294,7 +315,6 @@ class SearchState extends State<SearchPage>{
 }
 
 
-
 //初始化单本书
 class SearchItem extends StatelessWidget {
 	String img;
@@ -313,7 +333,7 @@ class SearchItem extends StatelessWidget {
 	//加入书架操作
 	bool isset = false;
 
-	SearchItem(SearchResult args){
+	SearchItem(SearchResult args,List<SearchResult> _bookshelf){
 		this.index = args.index;
 		this.name = args.name;
 		this.author = args.bookinfolist.bookMsgInfoList[this.index].author;
@@ -324,6 +344,12 @@ class SearchItem extends StatelessWidget {
 
 		this.args = args;
 		this.index = index;
+
+		_bookshelf.forEach((element) {
+			if(element.name == name){
+				isset = true;
+			}
+		});
 	}
 
 	final titlefont = const TextStyle(fontSize: 14.0,height: 1);
@@ -461,11 +487,11 @@ class SearchItem extends StatelessWidget {
 				onPressed: () {
 					if(isset){
 						//移除书架内小说
-						Removebook(name,state);
+						Removebook(name, state, context);
 					}else{
 						//加入书架
 						Addbook(name, bookinfo, sourcelist,
-								index,state);
+								index, state);
 					}
 				},
 				child: isset?Text('移除书架'):Text('加入书架'),
@@ -488,17 +514,42 @@ class SearchItem extends StatelessWidget {
 		];
 	}
 
-	void Removebook(String name, Function(void Function()) state){
-		if (dataload) {
-			return;
-		}
-		dataload = true;
-		Search.DelBookShelf(name).then((value){
-			state((){
-				isset = false;
-				dataload = false;
-			});
-		});
+	void Removebook(String name, Function(void Function()) state , BuildContext context){
+		showDialog<Null>(
+			context: context,
+			barrierDismissible: false,
+			builder: (BuildContext _context){
+				return new AlertDialog(
+					title: new Text("是否清理$name"),
+					content: new Text("删除后将清理阅读记录和书签"),
+					actions: <Widget>[
+						FlatButton(
+							child: Text('取消'),
+							onPressed: () {
+								Navigator.pop(context);
+							},
+						),
+						FlatButton(
+							child: Text('删除'),
+							onPressed: () {
+
+								if (dataload) {
+									return;
+								}
+								dataload = true;
+								Search.DelBookShelf(name).then((value){
+									Navigator.pop(context);
+									state((){
+										isset = false;
+										dataload = false;
+									});
+								});
+							},
+						),
+					],
+				);
+			},
+		);
 	}
 
 	//加入书架

@@ -1,10 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:reader/h.dart';
-import 'package:flutter/material.dart';
 import 'cache.dart';
 import 'dart:convert';
 import 'package:reader/model/httputils.dart';
 import 'package:reader/model/source.dart';
+
+/**
+ * history  List<String> 书籍名称list
+ *
+ * bookshelf List<String> 书籍信息json SearchResult
+ */
 
 class Search{
     static Future<int> GetSortIdByName(String bookname,String chaptername) async {

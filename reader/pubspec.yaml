@@ -33,6 +33,7 @@ dependencies:
   gbk2utf8: ^1.0.0
   crypto: ^2.0.6
   html: ^0.14.0+3
+  fluttertoast: ^3.0.3
 
 
 dev_dependencies:
