@@ -257,13 +257,27 @@ class BookChapter{
     //可选参数
     //场景  如果多个小说源  可能存在章节序数不对应问题  固定sort判断可以保证切源定位不丢失
     int sortid;
-    String content;
+    String content = "";
 
     BookChapter(this.name,this.chapterUrl);
 
     @override
     String toString() {
-        return 'BookChapter{name: $name} {url: $chapterUrl}';
+        String msg;
+
+        if(content.length ==0){
+            msg = 'BookChapter{name: $name} {url: $chapterUrl} {content:}';
+        }else{
+            msg = 'BookChapter{name: $name} {url: $chapterUrl}';
+
+            if(content.length>= 1000){
+                msg += content.substring(0,1000);
+            }else{
+                msg += content;
+            }
+        }
+
+        return msg;
     }
 
 }

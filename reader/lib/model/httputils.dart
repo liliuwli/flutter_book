@@ -101,7 +101,13 @@ class Request{
         String readmark;
 
         return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult){
-            readmark = _searchResult.readmark;
+
+            if(_searchResult == null){
+                readmark = null;
+            }else{
+                readmark = _searchResult.readmark;
+            }
+
             //根据已读章节名匹配章节记录  （如果出现重复章节名可能有bug）
             if(readmark != null){
                 for(int i=0;i<chapterList.length;i++){
