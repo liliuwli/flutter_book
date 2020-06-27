@@ -25,29 +25,83 @@ class Request{
     }
 
     Future<List<SearchResult>> SearchBookBySource(String keyword,Source source) async {
-        return await HttpManage.getInstance().asyncGet(source.baseUrl+source.SearchUrl, {source.SearchKey:keyword})
-        .then((Response htmlRsp){
-            if(htmlRsp.statusCode == 200){
-                ///获取内容
-                Fquery.newDocument(htmlRsp.data);
-                List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
-                List<String> imglist = Fquery.selector(source.SearchRule['imglist'].reg,source.SearchRule['imglist'].type);
-                List<String> namelist = Fquery.selector(source.SearchRule['namelist'].reg,source.SearchRule['namelist'].type);
-                List<String> desclist = Fquery.selector(source.SearchRule['desclist'].reg,source.SearchRule['desclist'].type);
-                List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
-                List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
+        Response htmlRsp;
+        switch(source.SearchType){
+            case 0:
+                htmlRsp = await HttpManage.getInstance().asyncGet(source.baseUrl+source.SearchUrl, {source.SearchKey:keyword});
+                break;
+            case 2:
+                htmlRsp = await HttpManage.getInstance().checkFormPost(source.baseUrl+source.SearchUrl, {source.SearchKey:keyword},source.CheckKeyType,source.CheckUrl,source.CheckKeyReg);
+                break;
+        }
 
-                return new List.generate(booklist.length, (index){
-                    SearchResult _searchResult = new SearchResult(namelist[index]);
+        if(htmlRsp.statusCode == 200){
+            ///获取内容
+            Fquery.newDocument(htmlRsp.data);
+            List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
 
-                    _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index]]));
-                    _searchResult.addSource(new BookSource(source.name,source.id));
-                    return _searchResult;
-                });
-            }else{
+            //print(htmlRsp.data.toString().substring(1000));
+            if(booklist == null || booklist.length == 0){
+                print("小说列表页数据获取可能有问题");
                 return null;
             }
-        });
+
+            //可能没有图片
+            List<String> imglist;
+            if(source.SearchRule['imglist'].reg == ""){
+                imglist = List.generate(booklist.length, (index) => "");
+            }else{
+                imglist = Fquery.selector(source.SearchRule['imglist'].reg,source.SearchRule['imglist'].type);
+            }
+
+            if(imglist == null || imglist.length == 0){
+                print("小说图片获取可能有问题");
+                return null;
+            }
+
+            List<String> namelist = Fquery.selector(source.SearchRule['namelist'].reg,source.SearchRule['namelist'].type);
+            if(namelist == null || namelist.length == 0){
+                print("小说搜索名称 获取可能有问题");
+                return null;
+            }
+
+            //可能没有简介
+            List<String> desclist;
+
+            if(source.SearchRule['desclist'].reg == ""){
+                desclist = List.generate(booklist.length, (index) => "");
+            }else{
+                desclist = Fquery.selector(source.SearchRule['desclist'].reg,source.SearchRule['desclist'].type);
+            }
+
+            if(desclist == null || desclist.length == 0){
+                print("小说简介获取可能有问题");
+                return null;
+            }
+
+            List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
+            if(authorlist == null || authorlist.length == 0){
+                print("小说作者获取可能有问题");
+                return null;
+            }
+
+            List<String> lastchapterlist = Fquery.selector(source.SearchRule['lastchapterlist'].reg,source.SearchRule['lastchapterlist'].type);
+            if(lastchapterlist == null || lastchapterlist.length == 0){
+                print("小说最新更新获取可能有问题");
+                return null;
+            }
+
+            return new List.generate(booklist.length, (index){
+                SearchResult _searchResult = new SearchResult(namelist[index]);
+
+                _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index]]));
+                _searchResult.addSource(new BookSource(source.name,source.id));
+                return _searchResult;
+            });
+        }else{
+            return null;
+        }
+
     }
 
     //后续发展多源异步获取数据
@@ -80,11 +134,17 @@ class Request{
 
     //异步获取小说目录
     Future<List<BookChapter>> ParserChapterList(String chapterlisturl,Source source) async {
+
+        if( !RegExp("http").hasMatch(chapterlisturl.toLowerCase()) ){
+            chapterlisturl = source.baseUrl+chapterlisturl;
+        }
+
         return await HttpManage.getInstance().asyncGet(chapterlisturl, {}).then((Response rsp){
             String html = rsp.data;
             Fquery.newDocument(html);
             List<String> namelist = Fquery.selector(source.ListRule['chapterName'].reg,source.ListRule['chapterName'].type);
             List<String> urllist = Fquery.selector(source.ListRule['chapterUrl'].reg,source.ListRule['chapterUrl'].type);
+
 
             return List.generate(namelist.length, (index) => new BookChapter(namelist[index], urllist[index]));
         });

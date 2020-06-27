@@ -67,11 +67,13 @@ class SourceListPageState extends State<SourceListPage>{
 		String name;
 		/// check search 点测 mark 记录利用xpath开发新书源
 		Request.getInstance().SearchBookBySource("斗破苍穹", _source).then((List<SearchResult> res){
+			print("请求搜索api········");
 			log.logData(res);
 			if( res.length<=0 ){
 				print("search is empty");
 				return null;
 			}
+			print("请求搜索api完成········");
 			return res;
 		}).then((List<SearchResult> bookResult){
 
@@ -79,15 +81,16 @@ class SourceListPageState extends State<SourceListPage>{
 			if(bookResult == null){
 				return null;
 			}
+			print("对搜索结果进行抽样解析·······");
 			name = bookResult[0].name;
+			print(bookResult[0].bookinfolist.bookMsgInfoList[0].booklist);
 			return Request.getInstance().ParserChapterList(bookResult[0].bookinfolist.bookMsgInfoList[0].booklist,_source).then((List<BookChapter> chapterList){
-
-				print(chapterList);
 
 				if( chapterList.length<=0 ){
 					print("chapter list is empty");
 					return null;
 				}
+				print("对搜索结果进行抽样解析完成·······");
 
 				return chapterList;
 			});

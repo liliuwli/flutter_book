@@ -3,20 +3,33 @@ import 'dart:convert';
 
 //网络加载的书源信息
 class Source{
-    int id = 1;
-    String name = '顶点小说网';
+    int id = 2;
+    String name = '书趣阁';
 
-    String baseUrl = "https://www.booktxt.com";
+    String baseUrl = "http://www.shuquge.com";
     String SearchUrl = "/search.php";
-    String SearchKey = "keyword";
+    String SearchKey = "searchkey";
+
+    /**
+     *       SearchType 搜索类型
+     *      0 默认get请求 get参数
+     *      1 post请求
+     *      2 post请求带cookie校验 校验码存储在js内
+     */
+    int SearchType = 2;
+
+    ///增加对表单令牌的支持
+    int CheckKeyType = 0;
+    String CheckUrl = "http://www.shuquge.com/js/common.js";
+    String CheckKeyReg = 'input.*?name=\\\\"(s)\\\\".*?value=\\\\"([^\\\\]*?)\\\\"';
 
     Map<String,ParserRule> SearchRule = <String,ParserRule>{
-        'booklist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a:href'),
-        'imglist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-pic"]/a/img:src'),
-        'namelist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-detail"]/h3/a/span/text()'),
-        'desclist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-desc"]/text()'),
-        'authorlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[1]/span[2]/text()'),
-        'lastchapterlist':new ParserRule(ParserType.xpath,'//div[@class="result-game-item-info"]/p[last()]/a/text()'),
+        'booklist':new ParserRule(ParserType.xpath,'//div[@class="bookbox"]/div[@class="p10"]/div[@class="bookinfo"]/h4/a:href'),
+        'imglist':new ParserRule(ParserType.xpath,''),
+        'namelist':new ParserRule(ParserType.xpath,'//div[@class="bookbox"]/div[@class="p10"]/div[@class="bookinfo"]/h4/a/text()'),
+        'desclist':new ParserRule(ParserType.xpath,''),
+        'authorlist':new ParserRule(ParserType.xpath,'//div[@class="bookbox"]/div[@class="p10"]/div[@class="bookinfo"]/div[@class="author"]/text()'),
+        'lastchapterlist':new ParserRule(ParserType.xpath,'//div[@class="bookbox"]/div[@class="p10"]/div[@class="bookinfo"]/div[@class="update"]/a/text()'),
     };
 
     Map<String,ParserRule> ListRule = <String,ParserRule>{
@@ -54,6 +67,19 @@ class Source{
         SearchUrl = jsonobj['SearchUrl'];
         SearchKey = jsonobj['SearchKey'];
 
+        if(jsonobj.containsKey("SearchType")){
+            SearchType = jsonobj['SearchType'];
+            CheckKeyType = jsonobj['CheckKeyType'];
+            CheckUrl = jsonobj['CheckUrl'];
+            CheckKeyReg = jsonobj['CheckKeyReg'];
+
+        }else{
+            SearchType = 0;
+            CheckKeyType = 0;
+            CheckUrl = "";
+            CheckKeyReg = "";
+        }
+
         Map<String,ParserRule> SearchRule = <String,ParserRule>{};
         (jsonobj['SearchRule'] as Map).forEach((key, value) {
             SearchRule[key] = ParserRule.fromJson(value);
@@ -79,6 +105,11 @@ class Source{
         data["baseUrl"] = this.baseUrl;
         data["SearchUrl"] = this.SearchUrl;
         data["SearchKey"] = this.SearchKey;
+
+        data["SearchType"] = this.SearchType;
+        data["CheckKeyType"] = this.CheckKeyType;
+        data["CheckUrl"] = this.CheckUrl;
+        data["CheckKeyReg"] = this.CheckKeyReg;
 
 
         data['SearchRule'] = this.SearchRule.map((key, value){

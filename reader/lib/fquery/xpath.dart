@@ -8,8 +8,12 @@ class Xpath{
 
 	//暂时不考虑. ..节点操作
 	static List<String> query(String selector,Document document){
+		if(selector==""){
+			return null;
+		}
 		List<SelectorRule> depath = Xpath.parse(selector);
 
+		//print(dpath);
 		return Xpath.domParse(document,dpath);
 	}
 
@@ -33,8 +37,12 @@ class Xpath{
 							}
 							break;
 						case SelectorType.node:
-							//提取node节点
-							root = Xpath.getChild("unattr","",_selectorRule.nodeTag,document);
+							if(_selectorRule.nodeTag != "."){
+								//提取node节点
+								root = Xpath.getChild("unattr","",_selectorRule.nodeTag,document);
+							}else{
+								//当前节点 不改变节点
+							}
 							break;
 
 						case SelectorType.element_child:
@@ -93,7 +101,6 @@ class Xpath{
 						});
 					});
 				}
-
 				break;
 			case "id":
 				//id选择器
@@ -182,7 +189,6 @@ class Xpath{
 						int _index;
 						ret = element.querySelectorAll(nodeTag);
 
-
 						if(isFunc && funcname.toLowerCase() == 'last'){
 							_index = ret.length - 1 + index;
 						}else{
@@ -199,7 +205,21 @@ class Xpath{
 				break;
 
 			default:
-				throw FormatException('not support '+attrname);
+				//String selector_string = nodeTag+'[$attrname="$attrval"]';
+				String selector_string = "[name]";
+				//print(selector_string);
+				if(root == null){
+					//第一级
+					_root = document.querySelectorAll(selector_string);
+				}else{
+					//多级筛选
+					root.forEach((element) {
+						ret = element.querySelectorAll(selector_string);
+						ret.forEach((element) {
+							_root.add(element);
+						});
+					});
+				}
 				break;
 		}
 

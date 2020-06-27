@@ -1,14 +1,21 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:gbk2utf8/gbk2utf8.dart';
 import 'dart:async';
+import 'package:reader/fquery/fquery.dart';
+import 'package:reader/model/source.dart';
+import 'package:reader/utils/log.dart';
+
+
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 class HttpManage{
     static final String GET = "get";
     static final String POST = "post";
     static HttpManage _instance;
     Dio dio;
-
+    CookieJar cookieJar;
     static HttpManage getInstance(){
         if(_instance == null){
             _instance = HttpManage();
@@ -22,6 +29,8 @@ class HttpManage{
             receiveTimeout: 100000,
             responseType: ResponseType.bytes,
         ));
+        cookieJar = CookieJar();
+        dio.interceptors.add(CookieManager(cookieJar));
     }
 
     Future<List<String>> MutilRequest(List<String> RequestUrl) async {
@@ -45,6 +54,24 @@ class HttpManage{
         return _completer.future;
     }
 
+    ///checkkey 一般可能动态渲染
+    ///访问根目录 获取cookie + checkkey
+    ///用cookie checkkey value 进行查询
+    Future<Response> checkFormPost(String url , Map<String, dynamic> params,int checkType,String checkUrl , String checkKeyReg) async {
+        //checkType 0
+        return await _asyncHttp(checkUrl, GET, null).then((Response htmlRsp) async {
+            //print(htmlRsp.data);
+            RegExpMatch match = new RegExp(checkKeyReg).firstMatch(htmlRsp.data);
+
+            String CheckKey = match.group(1);
+            String CheckKeyValue = match.group(2);
+            params[CheckKey] = CheckKeyValue;
+
+            return await _asyncHttp(url, POST, params);
+        });
+    }
+
+
     Future<Response> asyncGet(String url , Map<String, dynamic> params){
         return _asyncHttp(url, GET, params);
     }
@@ -61,10 +88,16 @@ class HttpManage{
             }else{
                 response = await dio.get(url,options: Options(responseType: ResponseType.bytes));
             }
+        }else{
+            response = await dio.post(url, queryParameters: params,options: Options(responseType: ResponseType.bytes));
         }
 
+        ///打印cookie
+        //print("cookie debuging"+url);
+        //print(cookieJar.loadForRequest(Uri.parse(url)));
+
         String data = gbk.decode(response.data);
-        bool is_utf8 = new RegExp('<meta\\s*charset[^>]*?utf-8[^>]*?>').hasMatch(data);
+        bool is_utf8 = new RegExp('<meta.*?charset[^>]*?utf-8[^>]*?>').hasMatch(data);
 
         if(is_utf8){
             data = utf8.decode(response.data);
