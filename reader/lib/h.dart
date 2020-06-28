@@ -264,14 +264,16 @@ class BookChapter{
     @override
     String toString() {
         String msg;
+        int length;
 
         if(content.length ==0){
-            msg = 'BookChapter{name: $name} {url: $chapterUrl} {content:}';
+            msg = 'BookChapter{name: $name} {url: $chapterUrl} {content:null}';
         }else{
-            msg = 'BookChapter{name: $name} {url: $chapterUrl}';
+            length = content.length;
+            msg = 'BookChapter{name: $name} {url: $chapterUrl} {content:$length}';
 
-            if(content.length>= 1000){
-                msg += content.substring(0,1000);
+            if(content.length>= 999){
+                msg += content.substring(0,999);
             }else{
                 msg += content;
             }

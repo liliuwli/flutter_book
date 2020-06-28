@@ -68,7 +68,7 @@ class SourceListPageState extends State<SourceListPage>{
 		/// check search 点测 mark 记录利用xpath开发新书源
 		Request.getInstance().SearchBookBySource("斗破苍穹", _source).then((List<SearchResult> res){
 			print("请求搜索api········");
-			log.logData(res);
+			//log.logData(res);
 			if( res.length<=0 ){
 				print("search is empty");
 				return null;
@@ -83,7 +83,6 @@ class SourceListPageState extends State<SourceListPage>{
 			}
 			print("对搜索结果进行抽样解析·······");
 			name = bookResult[0].name;
-			print(bookResult[0].bookinfolist.bookMsgInfoList[0].booklist);
 			return Request.getInstance().ParserChapterList(bookResult[0].bookinfolist.bookMsgInfoList[0].booklist,_source).then((List<BookChapter> chapterList){
 
 				if( chapterList.length<=0 ){
@@ -98,18 +97,18 @@ class SourceListPageState extends State<SourceListPage>{
 
 			/// check chapter info
 			if(chapterList == null){
+				print("chapter list is empty note");
 				return null;
 			}
 
 			return Request.getInstance().MutilReqChapter(chapterList, name, _source).then((List<BookChapter> _bookchapter){
-
 
 				if( chapterList.length<=0 ){
 					print("chapter list is empty");
 					return null;
 				}
 
-				print(_bookchapter);
+				print("开始请求章节内容······");
 
 				bool isEmpty = false;
 				_bookchapter.forEach((element) {
@@ -121,12 +120,14 @@ class SourceListPageState extends State<SourceListPage>{
 				if(isEmpty){
 					return null;
 				}else{
+					print("请求章节内容完毕······");
 					return _bookchapter;
 				}
 			});
 		}).then((List<BookChapter> _bookchapter){
 			/// over add source
 			if(_bookchapter == null){
+				print("chapter content is empty  ChapterRule need check regexp");
 				return null;
 			}else{
 				SourceManger.addSource();

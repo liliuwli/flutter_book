@@ -3,6 +3,7 @@ import 'package:reader/model/search.dart';
 import 'httpmanger.dart';
 import 'source.dart';
 import 'package:reader/utils/log.dart';
+import 'package:reader/utils/common.dart';
 import 'package:reader/h.dart';
 
 import 'package:reader/fquery/fquery.dart';
@@ -40,7 +41,6 @@ class Request{
             Fquery.newDocument(htmlRsp.data);
             List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
 
-            //print(htmlRsp.data.toString().substring(1000));
             if(booklist == null || booklist.length == 0){
                 print("小说列表页数据获取可能有问题");
                 return null;
@@ -145,6 +145,18 @@ class Request{
             List<String> namelist = Fquery.selector(source.ListRule['chapterName'].reg,source.ListRule['chapterName'].type);
             List<String> urllist = Fquery.selector(source.ListRule['chapterUrl'].reg,source.ListRule['chapterUrl'].type);
 
+            if(urllist != null || urllist.length != 0){
+                ///返回内容 判断是根目录 还是相对路径
+                urllist = urllist.map((String item){
+                    //如果是相对路径 返回绝对路径
+                    if(!RegExp("http").hasMatch(item.toLowerCase())){
+                        if(item.substring(0,1) != "/"){
+                            return GetUrlRelativePath(chapterlisturl)+item;
+                        }
+                    }
+
+                }).toList();
+            }
 
             return List.generate(namelist.length, (index) => new BookChapter(namelist[index], urllist[index]));
         });
@@ -220,9 +232,9 @@ class Request{
                 int i = 0;
                 html.forEach((String htmlItem) {
                     Fquery.newDocument(htmlItem);
-                    List<String> namelist = Fquery.selector(_source.ChapterRule['chapter'].reg,_source.ChapterRule['chapter'].type);
+                    List<String> contentList = Fquery.selector(_source.ChapterRule['chapter'].reg,_source.ChapterRule['chapter'].type);
                     String htmlString = "";
-                    namelist.forEach((item) {
+                    contentList.forEach((item) {
                         htmlString += item;
                     });
                     htmlString = htmlString.replaceAll("&nbsp;", " ");

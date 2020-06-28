@@ -42,7 +42,9 @@ class HttpManage{
         List<Response> responselist = await Future.wait(List.generate(RequestUrl.length, (index) => dio.get(RequestUrl[index])));
         responselist.forEach((Response response) {
             String data = gbk.decode(response.data);
-            bool is_utf8 = new RegExp('<meta\\s*charset[^>]*?utf-8[^>]*?>').hasMatch(data);
+
+            bool is_utf8 = new RegExp('<meta.*?charset[^>]*?utf-8[^>]*?>').hasMatch(data);
+
             if(is_utf8){
                 data = utf8.decode(response.data);
             }

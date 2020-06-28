@@ -5,6 +5,8 @@ import 'model/search.dart';
 import 'model/httputils.dart';
 import 'dart:async';
 
+import 'package:reader/model/source.dart';
+
 class SearchScreen extends StatelessWidget{
 	BuildContext PageContext;
 	@override
@@ -166,7 +168,9 @@ class SearchState extends State<SearchPage>{
 		}
 
 		Search.SaveSearchHistory(history).then((bool status){
-			Request.getInstance().SearchBook(searchtext,(List<SearchResult> args){
+			//后续修改为多源操作
+			Source _source = Source.getSource();
+			Request.getInstance().SearchBookBySource(searchtext, _source).then((List<SearchResult> args){
 				setState(() {
 					_searchresult = args;
 					offState = true;

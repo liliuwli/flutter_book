@@ -33,12 +33,12 @@ class Source{
     };
 
     Map<String,ParserRule> ListRule = <String,ParserRule>{
-        'chapterName':new ParserRule(ParserType.xpath,'//div[@class="box_con"]/div[@id="list"]/dd/a/text()'),
-        'chapterUrl':new ParserRule(ParserType.xpath,'//div[@class="box_con"]/div[@id="list"]/dd/a:href'),
+        'chapterName':new ParserRule(ParserType.xpath,'//div[@class="listmain"]/dl/dd[position()>12]/a/text()'),
+        'chapterUrl':new ParserRule(ParserType.xpath,'//div[@class="listmain"]/dl/dd[position()>12]/a:href'),
     };
 
     Map<String,ParserRule> ChapterRule = <String,ParserRule>{
-        'chapter':new ParserRule(ParserType.xpath,'//div[@class="content_read"]/div[@class="box_con"]/div[@id="content"]/text()'),
+        'chapter':new ParserRule(ParserType.xpath,'//div[@class="content"]/div[@id="content"]/text()'),
     };
 
 

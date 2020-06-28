@@ -85,6 +85,11 @@ class Xpath{
 		List<Element> _root = [];
 		List<Element> ret;
 
+
+		//position
+		int positionType = 0;           //0不启用 1大于 2小于
+		int positionKey = 0;            //判断条件
+
 		switch(attrname){
 			case "class":
 				if(root == null){
@@ -140,23 +145,34 @@ class Xpath{
 				if(isInt){
 					attrval = attrval.replaceAll(new RegExp('[\s]'), "");
 					index = int.parse(attrval);
+
+					nodeTag = nodeTag+":nth-child($index)";
 				}else{
+
 					//当前只匹配+-
 					isFunc = new RegExp('([^\(]*?)\\(\\)[+-]?([\\d]+?)?').hasMatch(attrval);
 					if(isFunc){
-						RegExpMatch func_match = new RegExp('([^\(]*?)\\(\\)[+-]?([\\d]+?)?').firstMatch(attrval);
+						RegExpMatch func_match = new RegExp('([^\(]*?)\\(\\)([+-><]?)([\\d]+)?').firstMatch(attrval);
 
 						funcname = func_match.group(1);
-						//String operator = func_match.group(2);
-						String _int = func_match.group(2);
+						String operator = func_match.group(2);
+						String _int = func_match.group(3);
+
 
 						switch(funcname.toLowerCase()){
+							case 'position':
+								if(operator == "<"){
+									positionType = 2;
+								}else if(operator == ">"){
+									positionType = 1;
+								}
+								positionKey = int.parse(_int);
+								break;
 							case 'last':
-								if(_int == null){
-									//未匹配到数字
-									index = 0;
+								if(_int == null || int.parse(_int) == 0){
+									nodeTag = nodeTag+":last-of-type";
 								}else{
-									index = 0-int.parse(_int);
+									nodeTag = nodeTag+":nth-last-child($_int)";
 								}
 								break;
 							default:
@@ -170,36 +186,42 @@ class Xpath{
 				}
 
 				if(root == null){
-					ret = document.querySelectorAll(nodeTag);
-					if(isFunc && funcname.toLowerCase() == 'last'){
-						index = ret.length - 1 + index;
+					_root = document.querySelectorAll(nodeTag);
+
+					if(positionType>0 && positionKey != 0){
+						if(positionType == 1){
+								//大于n
+							_root.removeRange(0,positionKey-1);
+						}
+
+						if(positionType == 2){
+							//小于n
+							_root.removeRange(positionKey,_root.length-1);
+						}
 					}else{
-						index = index - 1;
+						throw FormatException('cant use position not use condition '+attrval);
 					}
-
-					if(index < 0){
-						throw FormatException('[] content error'+attrval);
-					}
-
-					_root.add(ret[index]);
-
 				}else{
-
 					root.forEach((element) {
-						int _index;
 						ret = element.querySelectorAll(nodeTag);
 
-						if(isFunc && funcname.toLowerCase() == 'last'){
-							_index = ret.length - 1 + index;
+						if(positionType>0 && positionKey != 0){
+							if(positionType == 1){
+								//大于n
+								ret.removeRange(0,positionKey);
+							}
+
+							if(positionType == 2){
+								//小于n
+								ret.removeRange(positionKey,ret.length-1);
+							}
 						}else{
-							_index = index - 1;
+							throw FormatException('cant use position not use condition '+attrval);
 						}
 
-						if(_index < 0){
-							throw FormatException('[] content error'+attrval);
-						}
-
-						_root.add(ret[_index]);
+						ret.forEach((element) {
+							_root.add(element);
+						});
 					});
 				}
 				break;
