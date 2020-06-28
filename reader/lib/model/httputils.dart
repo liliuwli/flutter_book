@@ -26,21 +26,51 @@ class Request{
 
     }
 
+    int checkSearchResult(List<SearchResult> ret,SearchResult item){
+        int isset = -1;
+
+        for(int i = 0;i<ret.length;i++){
+            if(ret[i].name == item.name){
+                isset = i;
+            }
+        }
+
+        return isset;
+    }
+
     Future<List<SearchResult>> MutilSearchBook(String keyword) async {
         ///第一步 获取书源
         return await SourceManger.getSourceList().then((List<Source> sourceList) async {
-            return await Future.wait(List.generate(sourceList.length, (index){
-                Source sourceItem = sourceList[index];
-                return Request.getInstance().SearchBookBySource(keyword,sourceItem);
-            })).then((List<List<SearchResult>> mutilRes){
+            return await Future.wait(
+                ///多书源并行查询
+                List.generate(
+                    sourceList.length,
+                    (index){
+                        Source sourceItem = sourceList[index];
+                        return Request.getInstance().SearchBookBySource(keyword,sourceItem);
+                    }
+                )
+            ).then((List<List<SearchResult>> mutilRes){
+                List<SearchResult> ret = [];
                 mutilRes.forEach((List<SearchResult> res) {
-                    print("debug -----");
+                    ///多个书源
+                    res.forEach((SearchResult item) {
+                        ///多个结果
+                        int isset = checkSearchResult(ret,item);
+                        print(isset.toString() + "item:"+item.name);
+                        if(isset>=0){
+                            //已存在 进行结果合并
+                            ret[isset].sourcelist.length += item.sourcelist.length;
+                            ret[isset].bookinfolist.length += item.bookinfolist.length;
 
-                    print(res);
-
-                    print("debug over ----");
+                            ret[isset].sourcelist.bookSourceList.addAll(item.sourcelist.bookSourceList);
+                            ret[isset].bookinfolist.bookMsgInfoList.addAll(item.bookinfolist.bookMsgInfoList);
+                        }else{
+                            ret.add(item);
+                        }
+                    });
                 });
-                return null;
+                return ret;
             });
         });
     }
@@ -104,7 +134,7 @@ class Request{
             }
 
             List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
-            print(source.SearchRule['authorlist'].reg);
+
             if(authorlist == null || authorlist.length == 0){
                 print("小说作者获取可能有问题");
                 return null;

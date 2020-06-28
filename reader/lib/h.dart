@@ -69,10 +69,12 @@ class SearchResult{
     }
 
     void addSource(BookSource _source){
+        this.sourcelist.length++;
         this.sourcelist.bookSourceList.add(_source);
     }
 
     void addBookInfo(infoArgs){
+        this.bookinfolist.length++;
         this.bookinfolist.bookMsgInfoList.add(infoArgs);
     }
 

@@ -170,10 +170,21 @@ class SearchState extends State<SearchPage>{
 
 		Search.SaveSearchHistory(history).then((bool status) async {
 			//后续修改为多源操作
-			//Request.getInstance().MutilSearchBook(searchtext);
+			await Request.getInstance().MutilSearchBook(searchtext).then((List<SearchResult> args){
+				print(args.length);
+				setState(() {
+					_searchresult = args;
+					offState = true;
+					isLoading = false;
+					_searchstate = 2;
+				});
+			});
 			//SourceManger.addSource(sourceType:SourceType.file);
 
-			await SourceManger.getSourceById(1).then((Source _source) async {
+			/*
+
+			//指定书源搜索
+			await SourceManger.getSourceById(2).then((Source _source) async {
 				//print("搜索书源规则：");
 				//print(_source);
 				await Request.getInstance().SearchBookBySource(searchtext, _source).then((List<SearchResult> args){
@@ -185,6 +196,8 @@ class SearchState extends State<SearchPage>{
 					});
 				});
 			});
+
+			 */
 		});
 
 	}
@@ -325,6 +338,18 @@ class SearchState extends State<SearchPage>{
 	}
 }
 
+Widget getImg(String img){
+	if(img==""){
+		return new Image.asset(
+			'lib/assets/images/nocover.jpg'
+		);
+	}else{
+		return new FadeInImage.assetNetwork(
+			placeholder: 'lib/assets/images/nocover.jpg',
+			image: img,
+		);
+	}
+}
 
 //初始化单本书
 class SearchItem extends StatelessWidget {
@@ -376,10 +401,7 @@ class SearchItem extends StatelessWidget {
 						new Expanded(
 							child: new Container(
 								//加载占位图,
-								child: new FadeInImage.assetNetwork(
-									placeholder: 'lib/assets/images/nocover.jpg',
-									image: this.img
-								),
+								child: getImg(this.img),
 								margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
 							),
 							flex:1
@@ -608,7 +630,7 @@ Widget getContentHead(String name, List<BookMsgInfo> args, List<BookSource> sour
 			//img
 			new Expanded(
 					child: new Container(
-						child: new Image.network(args[index].imgurl),
+						child: getImg(args[index].imgurl),
 						margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
 					),
 					flex:2
