@@ -85,6 +85,11 @@ class Xpath{
 		List<Element> _root = [];
 		List<Element> ret;
 
+		//last
+		bool isLast = false;
+		//[123]
+		bool isInt = false;
+		int IntIndex;
 
 		//position
 		int positionType = 0;           //0不启用 1大于 2小于
@@ -137,20 +142,17 @@ class Xpath{
 
 			case "func":
 				//处理数字和函数
-				int index;
 				bool isFunc = false;
 				String funcname;
 
-				bool isInt = new RegExp('^[\\d\\s]+\$').hasMatch(attrval);
+				isInt = new RegExp('^[\\d\\s]+\$').hasMatch(attrval);
 				if(isInt){
+					///html 库不支持 css选择器 nth-child
 					attrval = attrval.replaceAll(new RegExp('[\s]'), "");
-					index = int.parse(attrval);
-
-					nodeTag = nodeTag+":nth-child($index)";
+					IntIndex = int.parse(attrval);
 				}else{
 
-					//当前只匹配+-
-					isFunc = new RegExp('([^\(]*?)\\(\\)[+-]?([\\d]+?)?').hasMatch(attrval);
+					isFunc = new RegExp('([^\(]*?)\\(\\)[+-><]?([\\d]+?)?').hasMatch(attrval);
 					if(isFunc){
 						RegExpMatch func_match = new RegExp('([^\(]*?)\\(\\)([+-><]?)([\\d]+)?').firstMatch(attrval);
 
@@ -169,11 +171,14 @@ class Xpath{
 								positionKey = int.parse(_int);
 								break;
 							case 'last':
+								isLast = true;
+								/*
 								if(_int == null || int.parse(_int) == 0){
 									nodeTag = nodeTag+":last-of-type";
 								}else{
 									nodeTag = nodeTag+":nth-last-child($_int)";
 								}
+								 */
 								break;
 							default:
 								throw FormatException('not support [] func'+funcname);
@@ -186,37 +191,69 @@ class Xpath{
 				}
 
 				if(root == null){
-					_root = document.querySelectorAll(nodeTag);
-
-					if(positionType>0 && positionKey != 0){
-						if(positionType == 1){
-								//大于n
-							_root.removeRange(0,positionKey-1);
+					if(isInt){
+						///填坑 css选择器问题  p[2]
+						final result = document.querySelectorAll(nodeTag);
+						if(IntIndex < result.length && IntIndex >0){
+							_root.add(result[IntIndex-1]);
 						}
-
-						if(positionType == 2){
-							//小于n
-							_root.removeRange(positionKey,_root.length-1);
-						}
+					}else if(isLast){
+						///填坑 css选择器问题  p[last()]
+						final result = document.querySelectorAll(nodeTag);
+						_root.add(result[result.length-1]);
 					}else{
-						throw FormatException('cant use position not use condition '+attrval);
+						_root = document.querySelectorAll(nodeTag);
 					}
-				}else{
-					root.forEach((element) {
-						ret = element.querySelectorAll(nodeTag);
 
-						if(positionType>0 && positionKey != 0){
+					if(positionType>0){
+						if(positionKey != 0){
 							if(positionType == 1){
 								//大于n
-								ret.removeRange(0,positionKey);
+								_root.removeRange(0,positionKey-1);
 							}
 
 							if(positionType == 2){
 								//小于n
-								ret.removeRange(positionKey,ret.length-1);
+								_root.removeRange(positionKey,_root.length-1);
 							}
 						}else{
 							throw FormatException('cant use position not use condition '+attrval);
+						}
+					}
+				}else{
+					root.forEach((element) {
+						//ret = element.querySelectorAll(nodeTag);
+						List<Element> ret = [];
+
+						if(isInt){
+							///填坑 css选择器问题  p[2]
+							final result = element.querySelectorAll(nodeTag);
+							if(IntIndex < result.length && IntIndex >0){
+								ret.add(result[IntIndex-1]);
+							}
+						}else if(isLast){
+							///填坑 css选择器问题  p[last()]
+							final result = element.querySelectorAll(nodeTag);
+							ret.add(result[result.length-1]);
+						}else{
+							ret = element.querySelectorAll(nodeTag);
+						}
+
+						if(positionType>0){
+							if(positionKey != 0){
+								if(positionType == 1){
+									//大于n
+									ret.removeRange(0,positionKey);
+								}
+
+								if(positionType == 2){
+									//小于n
+									ret.removeRange(positionKey,ret.length-1);
+								}
+							}else{
+								print(positionType);
+								throw FormatException('cant use position not use condition '+attrval);
+							}
 						}
 
 						ret.forEach((element) {

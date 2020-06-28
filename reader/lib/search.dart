@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:reader/model/sourcemanger.dart';
 import 'h.dart';
 import 'utils/common.dart';
 import 'model/search.dart';
@@ -167,15 +168,21 @@ class SearchState extends State<SearchPage>{
 			history.add(searchtext);
 		}
 
-		Search.SaveSearchHistory(history).then((bool status){
+		Search.SaveSearchHistory(history).then((bool status) async {
 			//后续修改为多源操作
-			Source _source = Source.getSource();
-			Request.getInstance().SearchBookBySource(searchtext, _source).then((List<SearchResult> args){
-				setState(() {
-					_searchresult = args;
-					offState = true;
-					isLoading = false;
-					_searchstate = 2;
+			//Request.getInstance().MutilSearchBook(searchtext);
+			//SourceManger.addSource(sourceType:SourceType.file);
+
+			await SourceManger.getSourceById(1).then((Source _source) async {
+				//print("搜索书源规则：");
+				//print(_source);
+				await Request.getInstance().SearchBookBySource(searchtext, _source).then((List<SearchResult> args){
+					setState(() {
+						_searchresult = args;
+						offState = true;
+						isLoading = false;
+						_searchstate = 2;
+					});
 				});
 			});
 		});

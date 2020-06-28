@@ -5,6 +5,7 @@ import 'source.dart';
 import 'package:reader/utils/log.dart';
 import 'package:reader/utils/common.dart';
 import 'package:reader/h.dart';
+import 'package:reader/model/sourcemanger.dart';
 
 import 'package:reader/fquery/fquery.dart';
 
@@ -25,6 +26,26 @@ class Request{
 
     }
 
+    Future<List<SearchResult>> MutilSearchBook(String keyword) async {
+        ///第一步 获取书源
+        return await SourceManger.getSourceList().then((List<Source> sourceList) async {
+            return await Future.wait(List.generate(sourceList.length, (index){
+                Source sourceItem = sourceList[index];
+                return Request.getInstance().SearchBookBySource(keyword,sourceItem);
+            })).then((List<List<SearchResult>> mutilRes){
+                mutilRes.forEach((List<SearchResult> res) {
+                    print("debug -----");
+
+                    print(res);
+
+                    print("debug over ----");
+                });
+                return null;
+            });
+        });
+    }
+
+    ///利用指定书源搜索小说
     Future<List<SearchResult>> SearchBookBySource(String keyword,Source source) async {
         Response htmlRsp;
         switch(source.SearchType){
@@ -37,13 +58,16 @@ class Request{
         }
 
         if(htmlRsp.statusCode == 200){
+
+            //print(htmlRsp.data);
             ///获取内容
             Fquery.newDocument(htmlRsp.data);
             List<String> booklist = Fquery.selector(source.SearchRule['booklist'].reg,source.SearchRule['booklist'].type);
 
+
             if(booklist == null || booklist.length == 0){
                 print("小说列表页数据获取可能有问题");
-                return null;
+                return [];
             }
 
             //可能没有图片
@@ -80,6 +104,7 @@ class Request{
             }
 
             List<String> authorlist = Fquery.selector(source.SearchRule['authorlist'].reg,source.SearchRule['authorlist'].type);
+            print(source.SearchRule['authorlist'].reg);
             if(authorlist == null || authorlist.length == 0){
                 print("小说作者获取可能有问题");
                 return null;
@@ -101,7 +126,6 @@ class Request{
         }else{
             return null;
         }
-
     }
 
     //后续发展多源异步获取数据

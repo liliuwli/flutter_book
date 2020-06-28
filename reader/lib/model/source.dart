@@ -72,7 +72,6 @@ class Source{
             CheckKeyType = jsonobj['CheckKeyType'];
             CheckUrl = jsonobj['CheckUrl'];
             CheckKeyReg = jsonobj['CheckKeyReg'];
-
         }else{
             SearchType = 0;
             CheckKeyType = 0;
@@ -80,17 +79,14 @@ class Source{
             CheckKeyReg = "";
         }
 
-        Map<String,ParserRule> SearchRule = <String,ParserRule>{};
         (jsonobj['SearchRule'] as Map).forEach((key, value) {
             SearchRule[key] = ParserRule.fromJson(value);
         });
 
-        Map<String,ParserRule> ListRule = <String,ParserRule>{};
         (jsonobj['ListRule'] as Map).forEach((key, value) {
             ListRule[key] = ParserRule.fromJson(value);
         });
 
-        Map<String,ParserRule> ChapterRule = <String,ParserRule>{};
         (jsonobj['ChapterRule'] as Map).forEach((key, value) {
             ChapterRule[key] = ParserRule.fromJson(value);
         });
@@ -138,6 +134,12 @@ class ParserRule{
     String reg;
 
     ParserRule(this.type,this.reg);
+
+
+    @override
+    String toString() {
+        return 'ParserRule{reg: $reg}';
+    }
 
     ParserRule.fromJson(Map<String,dynamic> jsonobj){
         switch(jsonobj['type']){
