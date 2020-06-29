@@ -3,6 +3,7 @@ import 'package:reader/h.dart';
 import 'package:reader/model/source.dart';
 import 'package:reader/model/search.dart';
 import 'package:reader/model/httputils.dart';
+import 'package:reader/model/sourcemanger.dart';
 import 'package:reader/utils/chapterPage.dart';
 
 //Toast弹窗
@@ -289,7 +290,7 @@ class BookState extends State<BookPage>{
 
 		isLoading = true;
 
-		return await Source.getSourceById(args.Sourceid).then((value){
+		return await SourceManger.getSourceById(args.Sourceid).then((value){
 			source = value;
 			isLoading = false;
 			return ;

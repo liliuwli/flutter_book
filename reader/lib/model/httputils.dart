@@ -202,12 +202,14 @@ class Request{
             if(urllist != null || urllist.length != 0){
                 ///返回内容 判断是根目录 还是相对路径
                 urllist = urllist.map((String item){
+
                     //如果是相对路径 返回绝对路径
                     if(!RegExp("http").hasMatch(item.toLowerCase())){
                         if(item.substring(0,1) != "/"){
                             return GetUrlRelativePath(chapterlisturl)+item;
                         }
                     }
+                    return item;
 
                 }).toList();
             }
@@ -262,7 +264,8 @@ class Request{
                     waitload.add(chapterList[i]);
                 }
             }
-
+print(index);
+print(chapterList);
             if(RequestUrl.length == 0){
                 //已经阅读到最后一章
                 index = chapterList.length - 1;

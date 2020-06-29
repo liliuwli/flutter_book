@@ -269,7 +269,7 @@ class SearchState extends State<SearchPage>{
 					itemCount: _searchresult.length,
 					itemBuilder:(context,i){
 						if( _searchresult[i] != null ){
-							return new SearchItem(_searchresult[i],bookshelf);
+							return new SearchItem(this,_searchresult[i],bookshelf);
 						}else{
 							return new Text("");
 						}
@@ -353,6 +353,7 @@ Widget getImg(String img){
 
 //初始化单本书
 class SearchItem extends StatelessWidget {
+	SearchState pageState;
 	String img;
 	String name;
 	String author;
@@ -369,7 +370,8 @@ class SearchItem extends StatelessWidget {
 	//加入书架操作
 	bool isset = false;
 
-	SearchItem(SearchResult args,List<SearchResult> _bookshelf){
+	SearchItem(SearchState _app,SearchResult args,List<SearchResult> _bookshelf){
+		this.pageState = _app;
 		this.index = args.index;
 		this.name = args.name;
 		this.author = args.bookinfolist.bookMsgInfoList[this.index].author;
@@ -480,8 +482,8 @@ class SearchItem extends StatelessWidget {
 									children: [
 										getContentHead(
 												name, bookinfo, sourcelist,
-												index),
-										getContentBody(bookinfo[index].desc),
+												this.index,context,state),
+										getContentBody(bookinfo[this.index].desc),
 									],
 								),
 								decoration: BoxDecoration(
@@ -500,7 +502,7 @@ class SearchItem extends StatelessWidget {
 										.height * 0.3,
 							),
 							actions: getBookActions(context,name, bookinfo, sourcelist,
-									index,state),
+									this.index,state),
 
 						);
 					});
@@ -604,88 +606,174 @@ class SearchItem extends StatelessWidget {
 			});
 		});
 	}
-}
 
 
-///dialog 内容体
-Widget getContentBody(String desc){
-	return new Expanded(
-		child: new Container(
-			child: new ListView(
-				children: [
-					new Text(desc)
-				],
-				shrinkWrap: true,
-			),
-		)
-	);
-}
 
-///dialog 内容头
-Widget getContentHead(String name, List<BookMsgInfo> args, List<BookSource> source, int index){
-	final titlefont = const TextStyle(fontSize: 16.0,height: 1);
-	final otherfont = const TextStyle(fontSize: 10,height: 1);
-	return new Row(
-		children: [
-			//img
-			new Expanded(
-					child: new Container(
-						child: getImg(args[index].imgurl),
-						margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
-					),
-					flex:2
-			),
-			new Expanded(
-					child: new Column(
-						children: [
-							//标题
-							new Row(
-								children: [
-									new Icon(Icons.book,color: Colors.black26,),
-									new Text(
-										stringLimit(name,7),
-										style: titlefont,
-									)
-								],
-							),
-							//作者
-							new Row(
-								children: [
-									new Icon(Icons.account_circle,color: Colors.black26,),
-									new Text(
-										args[index].author,
-										style: otherfont,
-									)
-								],
-							),
-							//更新
-							new Row(
-								children: [
-									new Icon(Icons.access_alarm,color: Colors.black26,),
-									new Text(
-										stringLimit(args[index].lastChapter,10),
-										style: otherfont,
-									)
-								],
-							),
-						],
-					),
-					flex:4
-			),
-			new Expanded(
+
+	///dialog 内容体
+	Widget getContentBody(String desc){
+		return new Expanded(
 				child: new Container(
-					child: new FlatButton(
-						onPressed: (){
-							print("click huanyuan");
-						},
-						child: new Text(
-							"换源",
-							style: otherfont,
-						)
+					child: new ListView(
+						children: [
+							new Text(desc)
+						],
+						shrinkWrap: true,
 					),
+				)
+		);
+	}
+
+	///dialog 内容头
+	Widget getContentHead(String name, List<BookMsgInfo> args, List<BookSource> source, int index,BuildContext _context,Function(void Function()) state){
+		final titlefont = const TextStyle(fontSize: 16.0,height: 1);
+		final otherfont = const TextStyle(fontSize: 10,height: 1);
+		return new Row(
+			children: [
+				//img
+				new Expanded(
+						child: new Container(
+							child: getImg(args[index].imgurl),
+							margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
+						),
+						flex:2
 				),
-				flex:1
+				new Expanded(
+						child: new Column(
+							children: [
+								//标题
+								new Row(
+									children: [
+										new Icon(Icons.book,color: Colors.black26,),
+										new Text(
+											stringLimit(name,7),
+											style: titlefont,
+										)
+									],
+								),
+								//作者
+								new Row(
+									children: [
+										new Icon(Icons.account_circle,color: Colors.black26,),
+										new Text(
+											args[index].author,
+											style: otherfont,
+										)
+									],
+								),
+								//更新
+								new Row(
+									children: [
+										new Icon(Icons.access_alarm,color: Colors.black26,),
+										new Text(
+											stringLimit(args[index].lastChapter,10),
+											style: otherfont,
+										)
+									],
+								),
+							],
+						),
+						flex:4
+				),
+				new Expanded(
+						child: new Container(
+							child: new FlatButton(
+									onPressed: (){
+										_showChangeSourceDialog(_context,name,args,source,index,state);
+										//String name, List<BookMsgInfo> args, List<BookSource> source, int index
+										///print();
+									},
+									child: new Text(
+										"换源",
+										style: otherfont,
+									)
+							),
+						),
+						flex:1
+				),
+			],
+		);
+	}
+
+	Widget changeSourceItem(bool isLighting ,String name ,BookMsgInfo _msginfo,BookSource _source,int key,BuildContext context,Function(void Function()) state){
+		final fontstyle = isLighting?const TextStyle(fontWeight: FontWeight.bold):const TextStyle();
+		return new GestureDetector(
+			child: new ListTile(
+				title: new Text(name+"--"+_source.name,style: fontstyle,),
+				subtitle: new Text("最近更新"+_msginfo.lastChapter),
 			),
-		],
-	);
+			onTap: (){
+				///修改书架数据
+				Search.getBookShelfByName(name).then((SearchResult _searchResult) async {
+					if(_searchResult==null){
+						return null;
+					}else{
+						_searchResult.index = key;
+
+						return await Search.SetBookShelf(_searchResult);
+					}
+				}).then((_){
+					///修改目录内容
+					this.pageState.setState(() {
+						this.pageState._searchresult = this.pageState._searchresult.map((item){
+							if(item.name == name){
+								item.index = key;
+							}
+							return item;
+						}).toList();
+					});
+					///修改弹出框内容
+					state((){
+						index = key;
+					});
+					///退出换源页面
+					Navigator.of(context).pop();
+				});
+			},
+		);
+	}
+
+	///显示换源ui
+	void _showChangeSourceDialog(BuildContext context,String name, List<BookMsgInfo> args, List<BookSource> source, int index,Function(void Function()) state){
+		//显示result信息
+		showDialog(
+				context: context,
+				barrierDismissible: true,           //点击空白退出
+				builder: (BuildContext context) {
+					return AlertDialog(
+						content: new Container(
+							//显示详情
+							child: new ListView.builder(
+								//换源信息  高亮index
+								padding: new EdgeInsets.all(5.0),
+								///height
+								itemExtent: 100.0,
+								itemCount: args.length,
+								itemBuilder: (BuildContext context,int key){
+									if(key == index){
+										return changeSourceItem(true,name,args[key],source[key],key,context,state);
+									}else{
+										return changeSourceItem(false,name,args[key],source[key],key,context,state);
+									}
+								},
+							),
+							decoration: BoxDecoration(
+									border: Border(
+											bottom: BorderSide(width: 1,
+													color: Colors.black26)
+									)
+							),
+							width: MediaQuery
+									.of(context)
+									.size
+									.width,
+							height: MediaQuery
+									.of(context)
+									.size
+									.height*0.8,
+						),
+					);
+				}
+		);
+	}
 }

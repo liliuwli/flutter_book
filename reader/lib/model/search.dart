@@ -1,4 +1,5 @@
 import 'package:reader/h.dart';
+import 'package:reader/model/sourcemanger.dart';
 import 'cache.dart';
 import 'dart:convert';
 import 'package:reader/model/httputils.dart';
@@ -30,7 +31,7 @@ class Search{
             int sourceid = _searchResult.sourcelist.bookSourceList[_searchResult.index].id;
 
             //寻找解析数据源
-            return await Source.getSourceById(sourceid).then((Source source) async {
+            return await SourceManger.getSourceById(sourceid).then((Source source) async {
                 //寻找小说目录
                 return await Request.getInstance().ParserChapterList(_searchResult.bookinfolist.bookMsgInfoList[_searchResult.index].booklist, source);
             });
