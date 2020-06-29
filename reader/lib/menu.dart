@@ -59,7 +59,7 @@ class SourceListPageState extends State<SourceListPage>{
 	//添加书源 - 源码操作
 	void addSource(){
 		///从代码资源内导入书源规则
-		//SourceManger.addSource(sourceType:SourceType.file);
+		SourceManger.addSource(sourceType:SourceType.file);
 
 		/// backup 记录json数据
 		SourceManger.backup().then((List<String> backupContent){
