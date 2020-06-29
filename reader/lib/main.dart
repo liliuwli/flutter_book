@@ -200,10 +200,7 @@ class BookItem extends StatelessWidget {
 						//img
 						new Expanded(
 							child: new Container(
-								child: new FadeInImage.assetNetwork(
-									placeholder: 'lib/assets/images/nocover.jpg',
-									image: this.img
-								),
+								child: getImg(this.img),
 								margin: EdgeInsets.only(right: 10,bottom: 10,top: 10),
 							),
 							flex:2

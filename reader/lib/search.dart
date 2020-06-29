@@ -533,6 +533,10 @@ class SearchItem extends StatelessWidget {
 			),
 			FlatButton(
 				onPressed: () {
+					//加入书架
+					Addbook(name, bookinfo, sourcelist,
+							index, state);
+
 					int sourceid = sourcelist[index].id;
 					String chapterlisturl = bookinfo[index].booklist;
 					String readmark = null;
