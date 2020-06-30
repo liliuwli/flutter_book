@@ -34,6 +34,8 @@ dependencies:
   crypto: ^2.0.6
   html: ^0.14.0+3
   fluttertoast: ^3.0.3
+  cookie_jar: ^1.0.0
+  dio_cookie_manager: 1.0.0
 
 
 dev_dependencies:
@@ -52,6 +54,8 @@ flutter:
   uses-material-design: true
   assets:
     - lib/assets/images/nocover.jpg
+    - lib/assets/images/source_1.json
+    - lib/assets/images/source_2.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

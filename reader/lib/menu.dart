@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:reader/model/source.dart';
 import 'package:reader/model/sourcemanger.dart';
@@ -62,9 +61,9 @@ class SourceListPageState extends State<SourceListPage>{
 		SourceManger.addSource(sourceType:SourceType.file);
 
 		/// backup 记录json数据
-		SourceManger.backup().then((List<String> backupContent){
-			log.logData(backupContent);
-		});
+		//SourceManger.backup().then((List<String> backupContent){
+		//	log.logData(backupContent);
+		//});
 
 		Source _source = Source.getSource();
 		String name;
@@ -133,7 +132,12 @@ class SourceListPageState extends State<SourceListPage>{
 				print("chapter content is empty  ChapterRule need check regexp");
 				return null;
 			}else{
-				SourceManger.addSource();
+				SourceManger.addSource().then((_){
+					//打印json
+					SourceManger.backup().then((List<String> backupContent){
+						log.logData(backupContent);
+					});
+				});
 				setState(() {
 					Page = PageContent();
 				});

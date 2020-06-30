@@ -5,7 +5,6 @@ import 'package:reader/model/source.dart';
 import 'package:reader/model/cache.dart';
 import 'dart:async';
 
-import 'dart:io';
 
 
 class SourceManger{
@@ -13,7 +12,7 @@ class SourceManger{
 	///从资源文件读书源
 	static Future<List<String>> loadFileSource() async {
 		String dir = "lib/assets/images/";
-		List<String> FileList = ["source_1.json"];
+		List<String> FileList = ["source_1.json","source_2.json"];
 
 		return await Future.wait(List.generate(FileList.length, (index) => rootBundle.loadString(dir+FileList[index])));
 	}
