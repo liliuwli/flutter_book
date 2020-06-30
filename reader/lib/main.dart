@@ -48,6 +48,8 @@ class AppState extends State<App> {
 		});
 
 		Search.getBookShelf().then((List<SearchResult> _bookshelf){
+			///mark 更新刷新书架
+			print(_bookshelf);
 			setState(() {
 				bookshelf = _bookshelf;
 				isLoadBookShelf = false;
@@ -89,9 +91,7 @@ class AppState extends State<App> {
 									shrinkWrap: true,
 									itemCount: bookshelf.length,
 									itemBuilder:(context,i){
-										if(i<bookshelf.length){
-											return new BookItem(this,bookshelf[i]);
-										}
+										return new BookItem(this,bookshelf[i]);
 									},
 								),
 							)

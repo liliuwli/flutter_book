@@ -57,7 +57,7 @@ class Request{
                     res.forEach((SearchResult item) {
                         ///多个结果
                         int isset = checkSearchResult(ret,item);
-                        print(isset.toString() + "item:"+item.name);
+                        //print(isset.toString() + "item:"+item.name);
                         if(isset>=0){
                             //已存在 进行结果合并
                             ret[isset].sourcelist.length += item.sourcelist.length;
@@ -214,7 +214,7 @@ class Request{
                 }).toList();
             }
 
-            return List.generate(namelist.length, (index) => new BookChapter(namelist[index], urllist[index]));
+            return List.generate(namelist.length, (index) => new BookChapter(namelist[index], urllist[index],index));
         });
     }
 
@@ -226,14 +226,21 @@ class Request{
         List<String> RequestUrl = List<String>();
         List<BookChapter> waitload = List<BookChapter>();
 
+        //阅读记录
         String readmark;
+        int sortid;
+
+        //是否是重复章节名 false 初始 true
+        bool isrepeat = false;
 
         return await Search.getBookShelfByName(bookname).then((SearchResult _searchResult){
 
             if(_searchResult == null){
                 readmark = null;
+                sortid = null;
             }else{
                 readmark = _searchResult.readmark;
+                sortid = _searchResult.sortid;
             }
 
             //根据已读章节名匹配章节记录  （如果出现重复章节名可能有bug）
@@ -241,7 +248,13 @@ class Request{
                 for(int i=0;i<chapterList.length;i++){
                     if(readmark == chapterList[i].name){
                         index = i;
-                        break;
+                        if(isrepeat){
+                            ///章节名重复，按章节数来定位
+                            index = sortid;
+                            break;
+                        }else{
+                            isrepeat = true;
+                        }
                     }
                 }
             }
@@ -264,8 +277,7 @@ class Request{
                     waitload.add(chapterList[i]);
                 }
             }
-print(index);
-print(chapterList);
+
             if(RequestUrl.length == 0){
                 //已经阅读到最后一章
                 index = chapterList.length - 1;

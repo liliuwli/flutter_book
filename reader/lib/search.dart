@@ -171,7 +171,7 @@ class SearchState extends State<SearchPage>{
 		Search.SaveSearchHistory(history).then((bool status) async {
 			//后续修改为多源操作
 			await Request.getInstance().MutilSearchBook(searchtext).then((List<SearchResult> args){
-				print(args.length);
+				//print(args.length);
 				setState(() {
 					_searchresult = args;
 					offState = true;

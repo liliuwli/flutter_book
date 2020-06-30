@@ -70,6 +70,7 @@ class Search{
                 return false;
             }else{
                 _searchResult.readmark = chaptername;
+                _searchResult.sortid = sortid;
                 await SetBookShelf(_searchResult);
                 return true;
             }

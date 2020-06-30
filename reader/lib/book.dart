@@ -98,7 +98,6 @@ class BookState extends State<BookPage>{
 	}
 
 	//页脚需要页码+章节名 切换页面需要更变章节
-
 	Future<bool> initPage() async {
 
 		if(chapterPage == null){
@@ -397,6 +396,7 @@ class BookState extends State<BookPage>{
 				if (snapshot.hasError) return Text('Error: ${snapshot.error}');
 
 				List<BookChapter> chapterDir = snapshot.data[0];
+				//已读的sortid
 				int readsort = snapshot.data[1];
 
 				return new ListView.builder(
@@ -413,7 +413,8 @@ class BookState extends State<BookPage>{
 										:new Text(chapterDir[i].name),
 							),
 							onTap: (){
-								Search.FreshMark(chapterDir[i].name,0,args.name).then((_){
+
+								Search.FreshMark(chapterDir[i].name,chapterDir[i].sortid,args.name).then((_){
 									//根据爬虫源 加载列表页
 									initChapter().then((value){
 										//对文本进行分页

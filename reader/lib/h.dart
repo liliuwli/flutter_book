@@ -29,6 +29,8 @@ class SearchResult{
 
     //设置已读
     String readmark;
+    //已读章节数 配合换源
+    int sortid = 0;
 
     //书籍详情
     BookMsgInfoList bookinfolist;
@@ -46,6 +48,13 @@ class SearchResult{
         name = jsonobj['name'];
         index = jsonobj['index'];
         readmark = jsonobj['readmark'];
+
+        if(jsonobj.containsKey("sortid")){
+            sortid = jsonobj['sortid'];
+        }else{
+            sortid = 0;
+        }
+
         bookinfolist = jsonobj['bookinfolist'] == null ? null :BookMsgInfoList.fromJson(jsonobj['bookinfolist']);
         sourcelist = jsonobj['sourcelist'] == null ? null :BookSourceList.fromJson(jsonobj['sourcelist']);
     }
@@ -55,6 +64,7 @@ class SearchResult{
         data["name"] = this.name;
         data["index"] = this.index;
         data["readmark"] = this.readmark;
+        data["sortid"] = this.sortid;
         data["bookinfolist"] = this.bookinfolist==null?null:this.bookinfolist.toJson();
         data["sourcelist"] = this.sourcelist==null?null:this.sourcelist.toJson();
 
@@ -261,7 +271,7 @@ class BookChapter{
     int sortid;
     String content = "";
 
-    BookChapter(this.name,this.chapterUrl);
+    BookChapter(this.name,this.chapterUrl,this.sortid);
 
     @override
     String toString() {
