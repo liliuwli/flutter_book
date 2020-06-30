@@ -12,6 +12,33 @@ import 'package:reader/model/source.dart';
  */
 
 class Search{
+    ///初次加载
+    static Future<bool> isFirstLoad() async {
+        Cache.init();
+        return await Cache.GetString("start").then((String value){
+            if(value == null){
+                return true;
+            }else{
+                return false;
+            }
+        });
+    }
+
+    static Future<bool> setFirstLoad() async {
+        Cache.init();
+        return await Cache.SetString("start", "version 1.0");
+    }
+
+    ///刷新最新章节数和章节名
+    static Future<bool> sourceRefresh(String bookname,int count,String last) async {
+        return await getBookShelfByName(bookname).then((SearchResult _searchResult) async {
+            _searchResult.bookinfolist.bookMsgInfoList[_searchResult.index].count = count;
+            _searchResult.bookinfolist.bookMsgInfoList[_searchResult.index].lastChapter = last;
+            return await SetBookShelf(_searchResult);
+        });
+    }
+
+    ///通过章节名称 获取对应书源的章节
     static Future<int> GetSortIdByName(String bookname,String chaptername) async {
         return await Search.BookDir(bookname).then((List<BookChapter> chapterlist){
             int ret;

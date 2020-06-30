@@ -54,7 +54,8 @@ class SourceManger{
 		//源码中class定义
 				_sourceList = await List<Source>()..add(Source.getSource());
 		}
-		print(_sourceList[0].SearchRule['booklist'].reg);
+
+		///print(_sourceList[0].SearchRule['booklist'].reg);
 
 		if(_sourceList == null || _sourceList.length == 0){
 			//添加失败
@@ -62,6 +63,7 @@ class SourceManger{
 			return await _completer.future;
 		}else{
 			return await SourceManger.getSourceList().then((List<Source> sourcelistdata) async{
+				///书源修改
 				_sourceList.forEach((Source item) {
 					bool isset = false;
 					for(int i=0;i<sourcelistdata.length;i++){

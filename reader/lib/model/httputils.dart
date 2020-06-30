@@ -149,7 +149,7 @@ class Request{
             return new List.generate(booklist.length, (index){
                 SearchResult _searchResult = new SearchResult(namelist[index]);
 
-                _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index]]));
+                _searchResult.addBookInfo(new BookMsgInfo([imglist[index],authorlist[index],booklist[index],desclist[index],lastchapterlist[index],0]));
                 _searchResult.addSource(new BookSource(source.name,source.id));
                 return _searchResult;
             });
@@ -158,7 +158,36 @@ class Request{
         }
     }
 
-    //后续发展多源异步获取数据
+    Future<SearchResult> bookRefresh(SearchResult _searchResult) async {
+        List<Source> sourceList = [];
+
+        return await Future.wait(List.generate(_searchResult.bookinfolist.bookMsgInfoList.length, (index) async {
+            ///刷新小说最新更新
+            return await SourceManger.getSourceById(_searchResult.sourcelist.bookSourceList[index].id).then((Source _source) async {
+                sourceList.add(_source);
+                ///获取小说目录
+                return await ParserChapterList(_searchResult.bookinfolist.bookMsgInfoList[index].booklist,_source);
+            });
+        })).then((List<List<BookChapter>> result) async {
+            ///更新章节总数 和 最新章节名
+            for(int i=0;i < _searchResult.bookinfolist.bookMsgInfoList.length;i++){
+                if(result[i] != null){
+                    _searchResult.bookinfolist.bookMsgInfoList[i].count = result[i].length;
+                    _searchResult.bookinfolist.bookMsgInfoList[i].lastChapter = result[i].last.name;
+                }
+
+                print(sourceList[i].name + "--------"+ result[i].length.toString() + "----" + result[i].last.name);
+            }
+
+            ///返回SearchResult
+            return await Search.SetBookShelf(_searchResult).then((_){
+                return _searchResult;
+            });
+        });
+    }
+
+    /*
+    //已废弃
     void SearchBook(String keyword,Function success){
         Source source = Source.getSource();
         HttpManage.getInstance().get(source.baseUrl+source.SearchUrl,{source.SearchKey:keyword},
@@ -185,6 +214,7 @@ class Request{
             print(error);
         });
     }
+     */
 
     //异步获取小说目录
     Future<List<BookChapter>> ParserChapterList(String chapterlisturl,Source source) async {

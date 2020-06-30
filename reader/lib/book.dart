@@ -330,10 +330,12 @@ class BookState extends State<BookPage>{
 			Navigator.pop(context);
 		}
 
-		return await Request.getInstance().ParserChapterList(args.chapterlisturl, source).then((List<BookChapter> chapterlist){
-			setState(() {
-				isLoading = false;
-				dir = chapterlist;
+		return await Request.getInstance().ParserChapterList(args.chapterlisturl, source).then((List<BookChapter> chapterlist) async {
+			return await Search.sourceRefresh(args.name,chapterlist.length,chapterlist.last.name).then((_){
+				setState(() {
+					isLoading = false;
+					dir = chapterlist;
+				});
 			});
 		});
 	}
@@ -350,6 +352,7 @@ class BookState extends State<BookPage>{
 				title: new Text(args.name),
 				actions: <Widget>[
 					//菜单键
+					new IconButton(icon:new Icon(Icons.all_inclusive),onPressed: changeSource,),
 					new IconButton(icon:new Icon(Icons.book),onPressed: showDir,),
 				],
 			),
@@ -451,11 +454,128 @@ class BookState extends State<BookPage>{
 		);
 	}
 
+	//显示换源列表
+	void changeSource(){
+		if(isLoading){
+			return ;
+		}
+
+		showDialog(
+			context: context,
+			barrierDismissible: true,           //点击空白退出
+			builder: (BuildContext context) {
+				return AlertDialog(
+						content: new Container(
+							//显示详情
+							child: getBookSource(),
+							decoration: BoxDecoration(
+									border: Border(
+											bottom: BorderSide(
+													width: 1,
+													color: Colors.black26
+											)
+									)
+							),
+							width: MediaQuery
+									.of(context)
+									.size
+									.width * 0.8,
+							height: MediaQuery
+									.of(context)
+									.size
+									.height * 0.7,
+						)
+
+				);
+			}
+		);
+	}
+
+	///修改书源事件
+	Widget changeSourceItem(bool isLighting ,String name ,BookMsgInfo _msginfo,String _sourceName,int key,BuildContext context){
+		final fontstyle = isLighting?const TextStyle(fontWeight: FontWeight.bold):const TextStyle();
+		return new GestureDetector(
+			child: new ListTile(
+				title: new Text(name+"--"+_sourceName,style: fontstyle,),
+				subtitle: new Text("最近更新"+_msginfo.lastChapter),
+			),
+			onTap: (){
+				///修改书架数据
+				Search.getBookShelfByName(name).then((SearchResult _searchResult) async {
+					if(_searchResult==null){
+						return null;
+					}else{
+						_searchResult.index = key;
+
+						return await Search.SetBookShelf(_searchResult);
+					}
+				}).then((_){
+
+					///重新加载小说内容
+					initSource().then((value){
+						//加载爬虫源
+						initdir().then((value){
+							//根据爬虫源 加载列表页
+							initChapter().then((value){
+								//对文本进行分页
+								initPage().then((_){
+									///退出换源页面
+									Navigator.of(context).pop();
+								});
+							});
+						});
+					});
+
+				});
+			},
+		);
+	}
+
+	///构建换源弹窗主体
+	Widget _buildSourceChange(BuildContext context, AsyncSnapshot snapshot) {
+		final CacheStyle = const TextStyle(fontWeight: FontWeight.bold);
+		switch (snapshot.connectionState) {
+			case ConnectionState.waiting:
+				return Center(
+					child: CircularProgressIndicator(),
+				);
+			case ConnectionState.done:
+				if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+
+				SearchResult _searchResult = snapshot.data;
+
+				return new ListView.builder(
+					shrinkWrap: true,
+					itemCount: _searchResult.sourcelist.length,
+					itemExtent: 100.0,
+					itemBuilder:(context,i){
+
+						if(_searchResult.index == i){
+							return changeSourceItem(true,args.name,_searchResult.bookinfolist.bookMsgInfoList[i],_searchResult.sourcelist.bookSourceList[i].name,i,context);
+						}else{
+							return changeSourceItem(true,args.name,_searchResult.bookinfolist.bookMsgInfoList[i],_searchResult.sourcelist.bookSourceList[i].name,i,context);
+						}
+
+					},
+				);
+			default:
+				return null;
+		}
+	}
+
+	Widget getBookSource(){
+		return FutureBuilder(
+			builder: _buildSourceChange,
+			future: Search.getBookShelfByName(args.name), // 用户定义的需要异步执行的代码，类型为Future<String>或者null的变量或函数
+		);
+	}
+
 	//显示章节列表
 	void showDir(){
 		if(isLoading){
 			return ;
 		}
+
 		showDialog(
 			context: context,
 			barrierDismissible: true,           //点击空白退出

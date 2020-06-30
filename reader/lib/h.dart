@@ -218,7 +218,10 @@ class BookMsgInfo{
     //最新更新
     String lastChapter;
 
-    BookMsgInfo(List<String> Args):this.imgurl = Args[0],this.author = Args[1],this.booklist = Args[2],this.desc = Args[3],this.lastChapter = Args[4];
+    //总章节
+    int count;
+
+    BookMsgInfo(List<dynamic> Args):this.imgurl = Args[0],this.author = Args[1],this.booklist = Args[2],this.desc = Args[3],this.lastChapter = Args[4],this.count = Args[5];
 
     BookMsgInfo.fromJson(Map<String,dynamic> jsonobj){
         imgurl = jsonobj['imgurl'];
@@ -226,6 +229,9 @@ class BookMsgInfo{
         booklist = jsonobj['booklist'];
         desc = jsonobj['desc'];
         lastChapter = jsonobj['lastChapter'];
+        if(jsonobj.containsKey("count")){
+            count = jsonobj['count'];
+        }
     }
 
     Map<String,dynamic> toJson() {
@@ -235,6 +241,7 @@ class BookMsgInfo{
         data["booklist"] = this.booklist;
         data["desc"] = this.desc;
         data["lastChapter"] = this.lastChapter;
+        data["count"] = this.count;
 
         return data;
     }

@@ -5,7 +5,8 @@ import 'book.dart';
 import 'h.dart';
 import 'model/search.dart';
 
-import 'model/source.dart';
+import 'package:reader/model/sourcemanger.dart';
+import 'package:reader/model/httputils.dart';
 
 void main() => runApp(new MyApp());
 
@@ -32,14 +33,44 @@ class App extends StatefulWidget {
 class AppState extends State<App> {
 	bool isLoadBookShelf = false;
 	List<SearchResult> bookshelf = new List<SearchResult>();
+
 	@override
 	void initState() {
 		super.initState();
-		getBookShelf();
+
+		Search.isFirstLoad().then((bool isFirst) async {
+			///第一次打开应用加载书源信息
+			return await loadSource();
+		}).then((_){
+			///初始化书架内容
+			getBookShelf().then((_){
+				///刷新书架内容
+				shelfRefresh();
+			});
+		});
+	}
+
+	///刷新书架内容是个阻塞的操作
+	Future<void> shelfRefresh() async {
+		//bookshelf
+		return await Future.wait(List.generate(bookshelf.length, (index){
+			return Request.getInstance().bookRefresh(bookshelf[index]);
+		})).then((List<SearchResult> _newRes){
+			setState(() {
+				bookshelf = _newRes;
+			});
+		});
+	}
+
+	Future loadSource() async {
+		///加载书源信息
+		return await SourceManger.addSource(sourceType:SourceType.file).then((value) async {
+			return await Search.setFirstLoad();
+		});
 	}
 
 	//获取书架信息
-	void getBookShelf(){
+	Future<void> getBookShelf() async {
 		if (isLoadBookShelf) {
 			return;
 		}
@@ -47,9 +78,8 @@ class AppState extends State<App> {
 			isLoadBookShelf = true;
 		});
 
-		Search.getBookShelf().then((List<SearchResult> _bookshelf){
+		return await Search.getBookShelf().then((List<SearchResult> _bookshelf){
 			///mark 更新刷新书架
-			print(_bookshelf);
 			setState(() {
 				bookshelf = _bookshelf;
 				isLoadBookShelf = false;
@@ -174,6 +204,10 @@ class BookItem extends StatelessWidget {
 	String lastChapter;
 	String chapterlisturl;
 	int index;
+	///总章节数
+	int count;
+	///已读章节数
+	int sortid;
 
 	BookSource source;
 
@@ -181,12 +215,22 @@ class BookItem extends StatelessWidget {
 		//this.img,this.name,this.author,this.readmark,this.lastChapter,this.Source
 		name = _searchResult.name;
 		index = _searchResult.index;
+		sortid = _searchResult.sortid;
 		img = _searchResult.bookinfolist.bookMsgInfoList[index].imgurl;
 		author = _searchResult.bookinfolist.bookMsgInfoList[index].author;
 		lastChapter = _searchResult.bookinfolist.bookMsgInfoList[index].lastChapter;
 		chapterlisturl = _searchResult.bookinfolist.bookMsgInfoList[index].booklist;
+		count = _searchResult.bookinfolist.bookMsgInfoList[index].count;
 		readmark = _searchResult.readmark == null?"暂未阅读":_searchResult.readmark;
 		source = _searchResult.sourcelist.bookSourceList[index];
+
+		if(count == null){
+			count = 0;
+		}
+
+		if(sortid == null){
+			sortid = 0;
+		}
 	}
 
 	final titlefont = const TextStyle(fontSize: 16.0,height: 1);
@@ -253,8 +297,10 @@ class BookItem extends StatelessWidget {
 							flex:6
 						),
 						new Expanded(
+							///未读章节数
 							child: new Container(
-								child: new Icon(Icons.filter_9_plus,color: Colors.red,),
+								///child: new Icon(Icons.filter_9_plus,color: Colors.red,),
+								child: new Text((count-sortid).toString(),style: otherfont),
 							),
 							flex:1
 						),
