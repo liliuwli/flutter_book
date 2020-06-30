@@ -2,22 +2,18 @@ import 'package:flutter/material.dart';
 
 class Paging {
 	Paging(
-		{Size size,int maxLines=0}
+		{Size size,TextStyle textStyle,int maxLines=0}
 	){
 		_size = size;
 		_maxLines = maxLines;
 		_textPainter = new TextPainter();
-		_textStyle = new TextStyle(
-			fontSize: 20,
-			height: 1
-		);
+		_textStyle = textStyle;
 		_textAlign = TextAlign.left;
 		_textDirection = TextDirection.rtl;
 		_textPainter.textAlign = _textAlign;
 		_textPainter.textDirection = _textDirection;
 	}
 
-//  BookService bookService = new BookService();
 
 	/// view size
 	Size _size;
@@ -66,7 +62,7 @@ class Paging {
 		assert(text != null);
 		_textPainter
 			..text = new TextSpan(text: text, style: _textStyle)
-			..layout(maxWidth: _size.width);
+			..layout(maxWidth: _size.width,minWidth: _size.width);
 		_textPainter.size;
 		_textPainter.didExceedMaxLines;
 		if (false == onSize) {

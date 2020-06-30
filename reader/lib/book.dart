@@ -13,6 +13,7 @@ class BookScreen extends StatelessWidget{
 	Widget page;
 	BuildContext PageContext;
 	BookPageArguments args;
+
 	@override
 	Widget build(BuildContext context){
 		PageContext = context;
@@ -42,7 +43,7 @@ class BookPage extends StatefulWidget{
 class BookState extends State<BookPage>{
 	static const routeName = '/Book';
 	//阅读器
-	SafeArea root;
+	Widget root;
 	//当前章节
 	String chapterName = "";
 	bool offState = false;
@@ -74,6 +75,27 @@ class BookState extends State<BookPage>{
 
 	double pageWidth;
 
+	EdgeInsets padding;
+
+	//文字样式
+	final contentText = const TextStyle(
+		fontSize: 18.0,
+		height: 1.2,
+		color: Colors.black,
+		letterSpacing:1,
+		wordSpacing:0,
+		decoration: TextDecoration.none,
+	);
+
+	final noticeText = const TextStyle(
+		fontSize: 10.0,
+		height: 1,
+		color: Colors.black,
+		letterSpacing:1,
+		wordSpacing:0,
+		decoration: TextDecoration.none,
+	);
+
 	//传参
 	BookPageArguments args;
 	BookState(this.args);
@@ -103,17 +125,18 @@ class BookState extends State<BookPage>{
 		if(chapterPage == null){
 			//初始化分页器
 			pageWidth = globalKey.currentContext.size.width;
-			double _pageSizeWidth = globalKey.currentContext.size.width - 32;
-			//30是预留ui的大小 20是一行文本的高度
-			double _pageSizeHeight = globalKey.currentContext.size.height - 30 - 20;
-			chapterPage = new Paging(size:new Size(_pageSizeWidth,_pageSizeHeight));
+			///最外层widget 减去padding
+			double _pageSizeWidth = globalKey.currentContext.size.width - 32 - padding.left - padding.right;
+			double _pageSizeHeight = globalKey.currentContext.size.height - 45 - contentText.height * contentText.fontSize - padding.bottom - padding.top;
+
+			chapterPage = new Paging(size:new Size(_pageSizeWidth-contentText.fontSize,_pageSizeHeight-contentText.fontSize),textStyle: contentText);
 		}
 
 		pagelist = List<String>();
-		String content = chapterCache[cacheKey].content;
+		String content = chapterCache[cacheKey].content.trimRight();
 
 		while(chapterPage.layout(content,onSize: false)){
-			String page = content.substring(0,chapterPage.maxLength-1);
+			String page = content.substring(0,chapterPage.maxLength);
 			pagelist.add(page);
 			content = content.substring(chapterPage.maxLength);
 		}
@@ -123,6 +146,7 @@ class BookState extends State<BookPage>{
 		}
 
 		setState(() {
+
 			endPageStart = pageWidth * (pagelist.length-1);
 
 			pageController = new PageController(
@@ -347,6 +371,7 @@ class BookState extends State<BookPage>{
 		//分页器获取宽高
 		pagecontext = context;
 
+		/*
 		return new Scaffold(
 			appBar: new AppBar(
 				title: new Text(args.name),
@@ -369,6 +394,32 @@ class BookState extends State<BookPage>{
 					),
 				],
 			),
+		);
+		 */
+
+		padding = MediaQuery.of(context).padding;
+
+		return new SafeArea(
+			///全屏阅读
+			child: new Container(
+				child: Stack(
+					children: <Widget>[
+						//阅读器
+						root = buildBodyFunction(),
+						Offstage(
+							//loading进度条
+							offstage: offState,
+							child: Center(
+								child: CircularProgressIndicator(),
+							),
+						),
+					],
+				),
+				decoration: new BoxDecoration(
+					color: Colors.grey
+				),
+			),
+			key: globalKey,
 		);
 	}
 
@@ -611,30 +662,27 @@ class BookState extends State<BookPage>{
 	}
 
 	///封装方法构建PageView组件
-	SafeArea buildBodyFunction() {
+	Widget buildBodyFunction() {
 		///可实现左右页面滑动切换
-		return new SafeArea(
-			child:PageView(
-				//当页面选中后回调此方法
-				//参数[index]是当前滑动到的页面角标索引 从0开始
-				onPageChanged: (int index){
-					setState(() {
-						pagenum = index;
-					});
-				},
-				//值为flase时 显示第一个页面 然后从左向右开始滑动
-				//值为true时 显示最后一个页面 然后从右向左开始滑动
-				reverse: false,
-				//滑动到页面底部无回弹效果
-				physics: BouncingScrollPhysics(),
-				//横向滑动切换
-				scrollDirection: Axis.horizontal,
-				//页面控制器
-				controller: pageController,
-				//所有的子Widget
-				children: List<Widget>.generate(pagelist.length, (index) => CreatePage(pagelist[index])),
-			),
-			key: globalKey,
+		return PageView(
+			//当页面选中后回调此方法
+			//参数[index]是当前滑动到的页面角标索引 从0开始
+			onPageChanged: (int index){
+				setState(() {
+					pagenum = index;
+				});
+			},
+			//值为flase时 显示第一个页面 然后从左向右开始滑动
+			//值为true时 显示最后一个页面 然后从右向左开始滑动
+			reverse: false,
+			//滑动到页面底部无回弹效果
+			physics: BouncingScrollPhysics(),
+			//横向滑动切换
+			scrollDirection: Axis.horizontal,
+			//页面控制器
+			controller: pageController,
+			//所有的子Widget
+			children: List<Widget>.generate(pagelist.length, (index) => CreatePage(pagelist[index])),
 		);
 	}
 
@@ -645,7 +693,7 @@ class BookState extends State<BookPage>{
 					child:
 					new Text(
 						content,
-						style: const TextStyle(fontSize: 20.0,height: 1),
+						style: contentText,
 					),
 					padding: new EdgeInsets.only(right: 16,left: 16,top: 10,bottom: 0),
 				),
@@ -656,9 +704,9 @@ class BookState extends State<BookPage>{
 						margin: new EdgeInsets.only(right: 16,left: 16,top: 5),
 						child: Row(
 							children: [
-								chapterCache == null ?new Text(""):new Text(chapterCache[cacheKey].name),
+								chapterCache == null ?new Text(""):new Text(chapterCache[cacheKey].name,style: noticeText,),
 								//Expanded(child: SizedBox()),
-								new Text((pagenum+1).toString() + '/' + pagelist.length.toString()),
+								new Text((pagenum+1).toString() + '/' + pagelist.length.toString(),style: noticeText,),
 							],
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
 						),
