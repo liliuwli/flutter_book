@@ -65,6 +65,7 @@ class Paging {
 			..layout(maxWidth: _size.width,minWidth: _size.width);
 		_textPainter.size;
 		_textPainter.didExceedMaxLines;
+
 		if (false == onSize) {
 			return _textPainter.didExceedMaxLines ||
 					_textPainter.size.height > _size.height;

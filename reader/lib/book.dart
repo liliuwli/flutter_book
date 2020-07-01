@@ -50,6 +50,7 @@ class BookState extends State<BookPage>{
 	bool isLoading = false;
 	bool isPre = false;
 	bool isNext = false;
+	bool isMenu = true;
 
 	List<BookChapter> dir;
 	//缓存未读章节队列
@@ -68,6 +69,7 @@ class BookState extends State<BookPage>{
 	//pageController
 	PageController pageController;
 
+	//获取页面宽高
 	final GlobalKey globalKey = GlobalKey();
 
 	//记录末页中心起点
@@ -77,14 +79,21 @@ class BookState extends State<BookPage>{
 
 	EdgeInsets padding;
 
+
+	double _pageSizeWidth = 0;
+	double _pageSizeHeight = 0;
+
 	//文字样式
 	final contentText = const TextStyle(
+		inherit: false,
 		fontSize: 18.0,
 		height: 1.2,
 		color: Colors.black,
 		letterSpacing:1,
 		wordSpacing:0,
 		decoration: TextDecoration.none,
+		fontWeight: FontWeight.normal,
+		textBaseline: TextBaseline.alphabetic,
 	);
 
 	final noticeText = const TextStyle(
@@ -105,10 +114,20 @@ class BookState extends State<BookPage>{
 		super.initState();
 		args.name = args.name == null ? "未获取书名":args.name;
 
-
 		initSource().then((value){
 			//加载爬虫源
 			initdir().then((value){
+
+				//初始化分页器
+				pageWidth = globalKey.currentContext.size.width;
+				///最外层widget 减去padding
+				_pageSizeWidth = globalKey.currentContext.size.width - padding.left - padding.right;
+				_pageSizeHeight = globalKey.currentContext.size.height - 35 - padding.bottom - padding.top;
+				setState(() {
+					_pageSizeWidth = _pageSizeWidth;
+					_pageSizeHeight = _pageSizeHeight;
+				});
+
 				//根据爬虫源 加载列表页
 				initChapter().then((value){
 					//对文本进行分页
@@ -116,29 +135,27 @@ class BookState extends State<BookPage>{
 				});
 			});
 		});
-
 	}
+
 
 	//页脚需要页码+章节名 切换页面需要更变章节
 	Future<bool> initPage() async {
-
+		/**
+		 *      思路是通过 TextPainter.layout 来定位页面右下角的文本长度
+		 *      TextPainter.layout和text输出有差距
+		 */
 		if(chapterPage == null){
-			//初始化分页器
-			pageWidth = globalKey.currentContext.size.width;
-			///最外层widget 减去padding
-			double _pageSizeWidth = globalKey.currentContext.size.width - 32 - padding.left - padding.right;
-			double _pageSizeHeight = globalKey.currentContext.size.height - 45 - contentText.height * contentText.fontSize - padding.bottom - padding.top;
-
-			chapterPage = new Paging(size:new Size(_pageSizeWidth-contentText.fontSize,_pageSizeHeight-contentText.fontSize),textStyle: contentText);
+			print(_pageSizeHeight-contentText.fontSize*contentText.height*3);
+			chapterPage = new Paging(size:new Size(_pageSizeWidth - 32 , _pageSizeHeight-contentText.fontSize*contentText.height),textStyle: contentText);
 		}
 
 		pagelist = List<String>();
-		String content = chapterCache[cacheKey].content.trimRight();
+		String content = chapterCache[cacheKey].content.trim();
 
 		while(chapterPage.layout(content,onSize: false)){
 			String page = content.substring(0,chapterPage.maxLength);
 			pagelist.add(page);
-			content = content.substring(chapterPage.maxLength);
+			content = content.substring(chapterPage.maxLength).trim();
 		}
 
 		if(content.length>0){
@@ -146,7 +163,8 @@ class BookState extends State<BookPage>{
 		}
 
 		setState(() {
-
+			_pageSizeWidth = _pageSizeWidth;
+			_pageSizeHeight = _pageSizeHeight;
 			endPageStart = pageWidth * (pagelist.length-1);
 
 			pageController = new PageController(
@@ -289,6 +307,7 @@ class BookState extends State<BookPage>{
 								0.1,
 								curve: Curves.easeIn,
 							));
+
 							pagenum = pagelist.length-1;
 						});
 					});
@@ -399,27 +418,106 @@ class BookState extends State<BookPage>{
 
 		padding = MediaQuery.of(context).padding;
 
-		return new SafeArea(
-			///全屏阅读
-			child: new Container(
-				child: Stack(
-					children: <Widget>[
-						//阅读器
-						root = buildBodyFunction(),
-						Offstage(
-							//loading进度条
-							offstage: offState,
-							child: Center(
-								child: CircularProgressIndicator(),
+		return Scaffold(
+			body: new SafeArea(
+				///全屏阅读
+				child: new Container(
+					child: Stack(
+						children: <Widget>[
+							//阅读器
+							root = buildBodyFunction(),
+							///隐藏菜单
+							Offstage(
+								offstage: isMenu,
+								child: getBottomMenu(),
 							),
-						),
-					],
+							Offstage(
+								//loading进度条
+								offstage: offState,
+								child: Center(
+									child: CircularProgressIndicator(),
+								),
+							),
+						],
+					),
+					decoration: new BoxDecoration(
+						color: Colors.white
+					),
 				),
-				decoration: new BoxDecoration(
-					color: Colors.grey
-				),
+				key: globalKey,
 			),
-			key: globalKey,
+		);
+	}
+
+	Widget getBottomMenu(){
+		return Container(
+			child: Container(
+				child: Row(
+					children: [
+						getBottomMenuAction(MenuAction.dir),
+						getBottomMenuAction(MenuAction.source),
+						getBottomMenuAction(MenuAction.pre),
+						getBottomMenuAction(MenuAction.next),
+					],
+					mainAxisAlignment: MainAxisAlignment.spaceBetween,
+				),
+				margin: EdgeInsets.only(left: 20,right: 20),
+			),
+
+			decoration: new BoxDecoration(
+				color: Colors.greenAccent
+			),
+
+			width: MediaQuery.of(context).size.width,
+		);
+	}
+
+	Widget getBottomMenuAction(MenuAction type){
+		Tab _tab;
+		Function callback;
+
+		switch(type){
+			case MenuAction.dir:
+				_tab = Tab(
+					icon: new Icon(Icons.menu),
+					text: "目录",
+				);
+				callback = showDir;
+				break;
+			case MenuAction.source:
+				_tab = Tab(
+					icon: new Icon(Icons.all_inclusive),
+					text: "换源",
+				);
+				callback = changeSource;
+				break;
+			case MenuAction.next:
+				_tab = Tab(
+					icon: new Icon(Icons.navigate_next),
+					text: "下一章",
+				);
+
+				callback = nextChapter;
+				break;
+
+			case MenuAction.pre:
+				_tab = Tab(
+					icon: new Icon(Icons.navigate_before),
+					text: "上一章",
+				);
+
+				callback = preChapter;
+				break;
+		}
+
+		return GestureDetector(
+			child: _tab,
+			onTap: (){
+				callback();
+				setState(() {
+					isMenu = true;
+				});
+			},
 		);
 	}
 
@@ -691,11 +789,33 @@ class BookState extends State<BookPage>{
 			children: [
 				Container(
 					child:
-					new Text(
-						content,
-						style: contentText,
+					GestureDetector(
+						child: new Text(
+							content,
+							style: contentText,
+						),
+						onTapDown: (TapDownDetails details){
+							//唤醒菜单
+							double sensitive = 100;
+							double centerDown = globalKey.currentContext.size.height/2+sensitive;
+							double centerUp = globalKey.currentContext.size.height/2-sensitive;
+							if(details.globalPosition.dy <= centerDown &&  details.globalPosition.dy>= centerUp){
+								setState(() {
+									if(isMenu == false){
+										isMenu = true;
+									}else{
+										isMenu = false;
+									}
+								});
+							}
+						},
 					),
 					padding: new EdgeInsets.only(right: 16,left: 16,top: 10,bottom: 0),
+					width: pageWidth,
+					constraints: BoxConstraints(
+						maxHeight: _pageSizeHeight,
+						maxWidth: _pageSizeWidth
+					),
 				),
 
 				//提示栏
@@ -723,4 +843,11 @@ class BookState extends State<BookPage>{
 			],
 		);
 	}
+}
+
+enum MenuAction{
+	source,
+	dir,
+	next,
+	pre
 }
